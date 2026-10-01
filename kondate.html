@@ -71,7 +71,7 @@
     <!-- メインナビゲーション (タブ) -->
     <nav class="flex rounded-2xl bg-white p-1.5 shadow-sm mb-6 border border-gray-100">
       <button @click="currentTab = 'search'" :class="['flex-1 py-2.5 rounded-xl font-bold text-sm transition', currentTab === 'search' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-800']">
-        🔍 さがす
+        🔍 メニューをさがす
       </button>
       <button @click="currentTab = 'register'" :class="['flex-1 py-2.5 rounded-xl font-bold text-sm transition', currentTab === 'register' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-800']">
         ✏️ 登録
@@ -84,7 +84,7 @@
     <!-- ================= ① 献立をさがす（検索画面） ================= -->
     <main v-if="currentTab === 'search'" class="space-y-6">
       
-      <!-- モード切り替え（夕飯 / 簡単 / 料理名検索） -->
+      <!-- モード切り替え（夕飯 / 簡単 / サブおかず） -->
       <div class="flex gap-2">
         <button @click="searchMode = 'dinner'" :class="['flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold border transition', searchMode === 'dinner' ? 'bg-accentYellow text-white border-accentYellow shadow-sm' : 'bg-white text-gray-600 border-gray-200']">
           夕飯モード
@@ -92,24 +92,15 @@
         <button @click="searchMode = 'lunch'" :class="['flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold border transition', searchMode === 'lunch' ? 'bg-secondary text-white border-secondary shadow-sm' : 'bg-white text-gray-600 border-gray-200']">
           簡単モード
         </button>
-        <button @click="searchMode = 'keyword'" :class="['flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold border transition flex items-center justify-center gap-1', searchMode === 'keyword' ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-gray-600 border-gray-200']">
-          🔍 検索
+        <button @click="searchMode = 'sub'" :class="['flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold border transition', searchMode === 'sub' ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-gray-600 border-gray-200']">
+          サブおかずモード
         </button>
       </div>
 
-      <!-- 料理名検索モード入力欄 -->
-      <section v-if="searchMode === 'keyword'" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-3">
-        <h2 class="font-bold text-sm text-gray-700">料理名からさがす</h2>
-        <div class="relative">
-          <input v-model="keywordQuery" placeholder="料理名を入力... (例: ハンバーグ、生姜焼き)" class="w-full p-3 pr-10 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-primary">
-          <span v-if="keywordQuery" @click="keywordQuery = ''" class="absolute right-3 top-2.5 text-gray-400 hover:text-gray-600 font-bold cursor-pointer text-sm">✕</span>
-        </div>
-      </section>
-
-      <!-- 食材選択エリア (夕飯・簡単モード時のみ表示) -->
-      <section v-if="searchMode !== 'keyword'" class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100">
+      <!-- 食材選択エリア -->
+      <section class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100">
         <div class="flex justify-between items-center mb-3">
-          <h2 class="font-bold text-sm text-gray-700">食材</h2>
+          <h2 class="font-bold text-sm text-gray-700">家にある食材・使いたい食材</h2>
           <button @click="isEditingIngredients = !isEditingIngredients" :class="['text-xs px-3 py-1 rounded-lg border font-bold transition', isEditingIngredients ? 'bg-primary text-white border-primary' : 'bg-gray-100 text-gray-600 border-gray-200']">
             {{ isEditingIngredients ? '完了' : '編集' }}
           </button>
@@ -201,12 +192,216 @@
           <select v-model="searchFilter.temp" class="w-full p-2 border border-gray-200 rounded-xl">
             <option value="">指定なし</option>
             <option value="暑い">暑い</option>
+            <option value="寒い">アプリのご要望に合わせて修正を行いました。主な変更点は以下の通りです。
+
+1. **サブおかず提案を「持っている食材」優先に**: 「ある食材（緑色/2回タップ）」を優先的に使ったサブおかずを選出するように改善しました。
+2. **「探す内検索」を「一覧・編集」タブに移動**: 「料理名からさがす」キーワード検索を「一覧・編集」タブに統合しました。
+3. **「サブおかずモード」の追加**: 夕飯・簡単モードと並んで「サブおかず」モードを選択でき、指定した食材に合わせてサブおかず（副菜）のみを検索できるようにしました。
+4. **ジャンル・ボリュームのデフォルト全選択**: 検索条件のジャンル（和風・洋風・中華・その他）とボリューム（あっさり・ふつう・がっつり）が最初から全てチェックされた状態になるよう初期化処理を整えました。
+
+以下が修正後の完全なHTMLコードです。そのまま保存してご使用いただけます。
+
+```html:index.html
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>こんだてナビ</title>
+  <!-- Vue.js 3 CDN -->
+  <script src="[https://unpkg.com/vue@3/dist/vue.global.js](https://unpkg.com/vue@3/dist/vue.global.js)"></script>
+  <!-- Tailwind CSS CDN -->
+  <script src="[https://cdn.tailwindcss.com](https://cdn.tailwindcss.com)"></script>
+  <!-- Google Fonts -->
+  <link href="[https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap](https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap)" rel="stylesheet">
+  
+  <!-- Firebase SDKs -->
+  <script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js)"></script>
+  <script src="[https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js](https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js)"></script>
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            bgMain: '#F7F4EF',
+            cardBg: '#FFFFFF',
+            primary: '#E07A5F',
+            secondary: '#81B29A',
+            accentYellow: '#F4A261',
+            textMain: '#3D405B',
+            tagMeat: '#D9534F',
+            tagVeg: '#2E7D32',
+            tagOther: '#8E24AA'
+          },
+          fontFamily: {
+            sans: ['"Zen Maru Gothic"', 'sans-serif'],
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family: 'Zen Maru Gothic', sans-serif; background-color: #F7F4EF; color: #3D405B; }
+    .chip-none { background-color: #FFFFFF; border: 2px solid #E5E7EB; }
+    .chip-want { background-color: #FDF2E9; border: 2px solid #E07A5F; font-weight: bold; } /* 1回タップ: オレンジ */
+    .chip-have { background-color: #E8F5E9; border: 2px solid #81B29A; font-weight: bold; } /* 2回タップ: 緑 */
+    .chip-item { user-select: none; }
+  </style>
+</head>
+<body class="p-3 sm:p-6 max-w-2xl mx-auto min-h-screen pb-24">
+  <div id="app">
+
+    <!-- ヘッダー -->
+    <header class="flex justify-between items-center mb-6 pt-2">
+      <h1 class="text-2xl font-bold text-primary flex items-center gap-2">
+        <span>🍳</span> こんだてナビ
+      </h1>
+      <div class="flex gap-2">
+        <button @click="showFirebaseModal = true" class="text-xs bg-white px-3 py-1.5 rounded-full border border-gray-300 shadow-sm hover:bg-gray-50 transition">
+          Firebase
+        </button>
+        <button @click="showApiModal = true" class="text-xs bg-white px-3 py-1.5 rounded-full border border-gray-300 shadow-sm hover:bg-gray-50 transition">
+          Gemini API
+        </button>
+      </div>
+    </header>
+
+    <!-- Firebase未接続警告バー -->
+    <div v-if="!isFirebaseConnected" class="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-xs flex justify-between items-center">
+      <span>⚠️ Firebase未設定のためローカル保存モードです。</span>
+    </div>
+
+    <!-- メインナビゲーション (タブ) -->
+    <nav class="flex rounded-2xl bg-white p-1.5 shadow-sm mb-6 border border-gray-100">
+      <button @click="currentTab = 'search'" :class="['flex-1 py-2.5 rounded-xl font-bold text-sm transition', currentTab === 'search' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-800']">
+        🔍 メニューをさがす
+      </button>
+      <button @click="currentTab = 'register'" :class="['flex-1 py-2.5 rounded-xl font-bold text-sm transition', currentTab === 'register' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-800']">
+        ✏️ 登録
+      </button>
+      <button @click="currentTab = 'list'" :class="['flex-1 py-2.5 rounded-xl font-bold text-sm transition', currentTab === 'list' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-800']">
+        📖 一覧・編集
+      </button>
+    </nav>
+
+    <!-- ================= ① 献立をさがす（検索画面） ================= -->
+    <main v-if="currentTab === 'search'" class="space-y-6">
+      
+      <!-- モード切り替え（夕飯 / 簡単 / サブおかず） -->
+      <div class="flex gap-2">
+        <button @click="searchMode = 'dinner'" :class="['flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold border transition', searchMode === 'dinner' ? 'bg-accentYellow text-white border-accentYellow shadow-sm' : 'bg-white text-gray-600 border-gray-200']">
+          夕飯モード
+        </button>
+        <button @click="searchMode = 'lunch'" :class="['flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold border transition', searchMode === 'lunch' ? 'bg-secondary text-white border-secondary shadow-sm' : 'bg-white text-gray-600 border-gray-200']">
+          簡単モード
+        </button>
+        <button @click="searchMode = 'sub'" :class="['flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold border transition', searchMode === 'sub' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200']">
+          🥗 サブおかず
+        </button>
+      </div>
+
+      <!-- 食材選択エリア -->
+      <section class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100">
+        <div class="flex justify-between items-center mb-3">
+          <h2 class="font-bold text-sm text-gray-700">家にある食材・使いたい食材</h2>
+          <button @click="isEditingIngredients = !isEditingIngredients" :class="['text-xs px-3 py-1 rounded-lg border font-bold transition', isEditingIngredients ? 'bg-primary text-white border-primary' : 'bg-gray-100 text-gray-600 border-gray-200']">
+            {{ isEditingIngredients ? '完了' : '編集' }}
+          </button>
+        </div>
+
+        <div class="space-y-4">
+          <div v-for="cat in ['肉類', '野菜', 'その他']" :key="cat">
+            <div class="flex justify-between items-center mb-1.5">
+              <p class="text-xs font-bold text-gray-400">{{ cat }}</p>
+              <button v-if="isEditingIngredients" @click="promptAddIngredient(cat)" class="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-bold hover:bg-primary/20">
+                ＋追加
+              </button>
+            </div>
+            <div class="flex flex-wrap gap-2 min-h-[32px] p-1 rounded-xl bg-gray-50/50">
+              <div 
+                v-for="(item, idx) in defaultIngredients.filter(i => i.category === cat)" 
+                :key="item.name"
+                @click="cycleIngredientState(item.name)"
+                :class="['px-3 py-1.5 rounded-xl text-xs transition duration-150 flex items-center gap-1.5 chip-item cursor-pointer', getIngredientClass(item)]"
+              >
+                <span>{{ item.name }}</span>
+
+                <div v-if="isEditingIngredients" class="flex items-center gap-1 ml-1 border-l border-gray-200 pl-1">
+                  <button @click.stop="moveIngredient(item, -1)" class="w-4 h-4 rounded-full bg-gray-100 hover:bg-primary hover:text-white text-gray-600 flex items-center justify-center transition" title="左へ移動">
+                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M15 19l-7-7 7-7"/></svg>
+                  </button>
+                  <button @click.stop="moveIngredient(item, 1)" class="w-4 h-4 rounded-full bg-gray-100 hover:bg-primary hover:text-white text-gray-600 flex items-center justify-center transition" title="右へ移動">
+                    <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M9 5l7 7-7 7"/></svg>
+                  </button>
+                  <button @click.stop="removeIngredient(item.name)" class="text-xs text-red-500 font-bold ml-0.5">✕</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 絞り込み条件（夕飯・サブおかずモード時） -->
+      <section v-if="searchMode === 'dinner' || searchMode === 'sub'" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-4 text-xs">
+        <!-- むずかしさ (スライダー) -->
+        <div>
+          <div class="flex justify-between font-bold text-gray-700 mb-1">
+            <span>むずかしさ (上限)</span>
+            <span class="text-primary font-bold">レベル {{ searchFilter.maxDifficultyLevel }} ({{ getDifficultyLabel(searchFilter.maxDifficultyLevel) }})</span>
+          </div>
+          <input type="range" min="1" max="3" step="1" v-model.number="searchFilter.maxDifficultyLevel" class="w-full accent-primary">
+          <div class="flex justify-between text-[10px] text-gray-400 mt-0.5">
+            <span>1:簡単</span>
+            <span>2:ふつう</span>
+            <span>3:本格的</span>
+          </div>
+        </div>
+
+        <!-- ジャンル (デフォルトで全てチェック済み) -->
+        <div>
+          <label class="block font-bold text-gray-700 mb-1.5">ジャンル</label>
+          <div class="flex flex-wrap gap-2">
+            <label v-for="g in ['和風', '洋風', '中華', 'その他']" :key="g" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl cursor-pointer">
+              <input type="checkbox" :value="g" v-model="searchFilter.genres" class="rounded text-primary focus:ring-primary">
+              <span class="text-xs font-bold text-gray-700">{{ g }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 味付け / ボリューム (デフォルトで全てチェック済み) -->
+        <div>
+          <label class="block font-bold text-gray-700 mb-1.5">味付け / ボリューム</label>
+          <div class="flex flex-wrap gap-2">
+            <label v-for="v in ['あっさり', 'ふつう', 'がっつり']" :key="v" class="flex items-center gap-1.5 bg-gray-50 border border-gray-200 px-3 py-1.5 rounded-xl cursor-pointer">
+              <input type="checkbox" :value="v" v-model="searchFilter.volumes" class="rounded text-primary focus:ring-primary">
+              <span class="text-xs font-bold text-gray-700">{{ v }}</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- 食べ方 -->
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">食べ方</label>
+          <select v-model="searchFilter.feature1" class="w-full p-2 border border-gray-200 rounded-xl">
+            <option value="">指定なし</option>
+            <option value="別々">別々</option>
+            <option value="一緒に">一緒に</option>
+          </select>
+        </div>
+
+        <!-- おすすめの気温 -->
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">おすすめの気温</label>
+          <select v-model="searchFilter.temp" class="w-full p-2 border border-gray-200 rounded-xl">
+            <option value="">指定なし</option>
+            <option value="暑い">暑い</option>
             <option value="寒い">寒い</option>
             <option value="普通">普通</option>
           </select>
         </div>
 
-        <div class="pt-2 border-t border-gray-100">
+        <div v-if="searchMode === 'dinner'" class="pt-2 border-t border-gray-100">
           <label class="flex items-center gap-2 font-bold text-gray-700 cursor-pointer">
             <input type="checkbox" v-model="searchFilter.proposeSub" class="rounded text-primary focus:ring-primary">
             サブおかずも提案 🥗
@@ -214,8 +409,8 @@
         </div>
       </section>
 
-      <!-- 検索実行ボタン (夕飯・簡単モード時) -->
-      <button v-if="searchMode !== 'keyword'" @click="executeSearch(false)" class="w-full py-3.5 bg-primary text-white font-bold text-base rounded-2xl shadow-md hover:opacity-95 transition">
+      <!-- 検索実行ボタン -->
+      <button @click="executeSearch(false)" class="w-full py-3.5 bg-primary text-white font-bold text-base rounded-2xl shadow-md hover:opacity-95 transition">
         ✨ 献立をおすすめ順に提案！
       </button>
 
@@ -223,11 +418,11 @@
       <section id="search-results-anchor" v-if="displayedSearchResults.length > 0" class="space-y-4 pt-2">
         <h3 class="font-bold text-sm text-gray-700 flex items-center justify-between">
           <span>おすすめのメニュー ({{ displayedSearchResults.length }}件)</span>
-          <span v-if="isRelaxedSearch && searchMode !== 'keyword'" class="text-xs text-primary font-normal">※条件をゆるめて表示中</span>
+          <span v-if="isRelaxedSearch" class="text-xs text-primary font-normal">※条件をゆるめて表示中</span>
         </h3>
 
         <div v-for="item in displayedSearchResults" :key="item.id" @click="openDetailModal(item)" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative cursor-pointer hover:border-primary/50 transition">
-          <div v-if="searchMode !== 'keyword'" class="absolute top-4 right-4 bg-orange-50 text-primary font-bold text-xs px-2.5 py-1 rounded-full border border-orange-100">
+          <div class="absolute top-4 right-4 bg-orange-50 text-primary font-bold text-xs px-2.5 py-1 rounded-full border border-orange-100">
             おすすめ度 {{ item.matchScore }}%
           </div>
 
@@ -243,10 +438,10 @@
             </div>
           </div>
 
-          <!-- サブおかず提案（タップで詳細表示、シャッフルボタンは親要素へのイベント伝播を防止） -->
-          <div v-if="searchMode !== 'keyword' && searchFilter.proposeSub && item.subDish" @click.stop="openDetailModal(item.subDish)" class="mt-3 p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 flex justify-between items-center cursor-pointer hover:bg-emerald-100/60 transition">
+          <!-- サブおかず提案（夕飯モード時のみ） -->
+          <div v-if="searchMode === 'dinner' && searchFilter.proposeSub && item.subDish" @click.stop="openDetailModal(item.subDish)" class="mt-3 p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 flex justify-between items-center cursor-pointer hover:bg-emerald-100/60 transition">
             <div>
-              <p class="text-xs font-bold text-emerald-800">サブおかず提案 <span class="text-[10px] font-normal text-emerald-600"> (タップで詳細)</span></p>
+              <p class="text-xs font-bold text-emerald-800">🥗 合うサブおかず提案 <span class="text-[10px] font-normal text-emerald-600"> (タップで詳細)</span></p>
               <p class="text-xs font-bold text-gray-800 mt-0.5">{{ item.subDish.name }} <span class="text-gray-500 font-normal">({{ item.subDish.ingredients ? item.subDish.ingredients.join(', ') : '' }})</span></p>
             </div>
             <button @click.stop="rerollSubDish(item)" class="text-xs bg-white text-emerald-700 px-2 py-1 rounded-lg border border-emerald-200 shadow-sm hover:bg-emerald-50 shrink-0 ml-2">
@@ -257,15 +452,15 @@
           <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
             <span class="text-gray-400">前回作成: {{ item.lastMadeDate || 'なし' }}</span>
             <button @click.stop="markAsMade(item)" class="bg-secondary text-white font-bold px-3 py-1.5 rounded-xl hover:opacity-90 transition shadow-sm">
-              作った✨
+              作った
             </button>
           </div>
         </div>
       </section>
 
-      <div v-else-if="hasSearched || (searchMode === 'keyword' && keywordQuery)" class="bg-white p-6 rounded-2xl text-center space-y-3">
+      <div v-else-if="hasSearched" class="bg-white p-6 rounded-2xl text-center space-y-3">
         <p class="text-sm text-gray-600">ぴったりのレシピが見つかりませんでした。</p>
-        <button v-if="searchMode !== 'keyword'" @click="executeSearch(true)" class="bg-accentYellow text-white font-bold text-xs px-4 py-2 rounded-xl">
+        <button @click="executeSearch(true)" class="bg-accentYellow text-white font-bold text-xs px-4 py-2 rounded-xl">
           条件を緩めて再検索
         </button>
       </div>
@@ -377,6 +572,17 @@
 
     <!-- ================= ③ 閲覧・一覧 ================= -->
     <main v-if="currentTab === 'list'" class="space-y-4">
+      
+      <!-- 料理名キーワード検索バー (探す内検索から移動) -->
+      <section class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-2">
+        <h2 class="font-bold text-xs text-gray-700">🔍 料理名からさがす</h2>
+        <div class="relative">
+          <input v-model="keywordQuery" placeholder="料理名を入力... (例: ハンバーグ、生姜焼き)" class="w-full p-2.5 pr-10 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-primary">
+          <span v-if="keywordQuery" @click="keywordQuery = ''" class="absolute right-3 top-2 text-gray-400 hover:text-gray-600 font-bold cursor-pointer text-sm">✕</span>
+        </div>
+      </section>
+
+      <!-- フィルター機能 -->
       <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2 text-xs sm:flex-row">
         <select v-model="listFilterCategory" class="p-2 border border-gray-200 rounded-xl flex-1">
           <option value="">すべてのカテゴリ</option>
@@ -395,6 +601,7 @@
         </select>
       </div>
 
+      <!-- レシピ一覧表示 -->
       <div class="space-y-3">
         <div v-for="recipe in filteredList" :key="recipe.id" @click="openDetailModal(recipe)" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-xs relative cursor-pointer hover:border-primary/50 transition">
           <button @click.stop="deleteRecipe(recipe.id)" class="absolute top-3 right-3 text-gray-300 hover:text-red-500 font-bold text-base p-1">✕</button>
@@ -414,14 +621,14 @@
       </div>
     </main>
 
-    <!-- ================= モーダル：全情報表示＆詳細（ツールバーに被らない高さ指定: max-h-[88dvh] / min-h-[72dvh]） ================= -->
+    <!-- モーダル：全情報表示＆詳細 -->
     <div v-if="activeDetailModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-3 z-50">
       <div class="bg-white rounded-3xl max-w-lg w-full max-h-[88dvh] min-h-[72dvh] flex flex-col overflow-hidden shadow-xl my-auto">
         <!-- モーダルヘッダー -->
         <div class="p-3.5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
           <span class="bg-primary/10 text-primary font-bold text-xs px-3 py-1 rounded-full">{{ activeDetailModal.category }}</span>
           <div class="flex gap-2">
-            <button @click="startEditingActiveModal" class="text-xs bg-white border border-gray-300 font-bold px-3 py-1 rounded-xl hover:bg-gray-50">✏️ 編集</button>
+            <button @click="startEditingActiveModal" class="text-xs bg-white border border-gray-300 font-bold px-3 py-1 rounded-xl hover:bg-gray-50">✏️️ 編集</button>
             <button @click="activeDetailModal = null" class="text-gray-400 hover:text-gray-600 text-xl font-bold px-2">✕</button>
           </div>
         </div>
@@ -608,6 +815,7 @@
         const ingredientStates = ref({});
         const isEditingIngredients = ref(false);
 
+        // デフォルトでジャンル・ボリュームを全て選択状態に設定
         const searchFilter = ref({
           maxDifficultyLevel: 2,
           genres: ['和風', '洋風', '中華', 'その他'],
@@ -738,7 +946,11 @@
           const wantList = Object.keys(ingredientStates.value).filter(k => ingredientStates.value[k] === 'want');
           const haveList = Object.keys(ingredientStates.value).filter(k => ingredientStates.value[k] === 'have' || ingredientStates.value[k] === 'want');
 
+          // モードに応じた対象カテゴリ設定
           let candidates = recipes.value.filter(r => {
+            if (searchMode.value === 'sub') {
+              return r.category === 'サブおかず';
+            }
             if (searchMode.value === 'lunch') {
               return r.category === 'ごはんもの' || (r.category === 'メインおかず' && (r.difficultyLevel || 2) <= 1);
             }
@@ -769,7 +981,7 @@
 
           scored.sort((a, b) => b.matchScore - a.matchScore || a.missingCount - b.missingCount);
 
-          if (searchFilter.value.proposeSub) {
+          if (searchMode.value === 'dinner' && searchFilter.value.proposeSub) {
             scored.forEach(mainDish => { mainDish.subDish = findSubDish(mainDish); });
           }
 
@@ -782,21 +994,26 @@
         };
 
         const displayedSearchResults = computed(() => {
-          if (searchMode.value === 'keyword') {
-            if (!keywordQuery.value.trim()) return recipes.value;
-            const q = keywordQuery.value.trim().toLowerCase();
-            return recipes.value.filter(r => r.name && r.name.toLowerCase().includes(q));
-          }
           return searchResults.value;
         });
 
+        // 「ある食材（have / want）」を使ったサブおかずを優先提案する関数
         const findSubDish = (mainDish) => {
           const mainIngs = mainDish.ingredients || [];
-          const subs = recipes.value.filter(r => 
+          const haveList = Object.keys(ingredientStates.value).filter(k => ingredientStates.value[k] === 'have' || ingredientStates.value[k] === 'want');
+
+          let subs = recipes.value.filter(r => 
             r.category === 'サブおかず' &&
             !(r.ingredients || []).some(ing => mainIngs.includes(ing))
           );
           if (subs.length === 0) return null;
+
+          // 手持ち食材を使っているサブおかずがあれば優先
+          const matchedSubs = subs.filter(r => (r.ingredients || []).some(ing => haveList.includes(ing)));
+          if (matchedSubs.length > 0) {
+            return matchedSubs[Math.floor(Math.random() * matchedSubs.length)];
+          }
+
           return subs[Math.floor(Math.random() * subs.length)];
         };
 
@@ -895,6 +1112,12 @@
         const filteredList = computed(() => {
           let list = recipes.value;
           
+          // キーワードによる検索フィルタリング
+          if (keywordQuery.value.trim()) {
+            const q = keywordQuery.value.trim().toLowerCase();
+            list = list.filter(r => r.name && r.name.toLowerCase().includes(q));
+          }
+
           if (listFilterCategory.value) {
             list = list.filter(r => r.category === listFilterCategory.value);
           }
