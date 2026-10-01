@@ -71,13 +71,13 @@
     <!-- メインナビゲーション (タブ) -->
     <nav class="flex rounded-2xl bg-white p-1.5 shadow-sm mb-6 border border-gray-100">
       <button @click="currentTab = 'search'" :class="['flex-1 py-2.5 rounded-xl font-bold text-sm transition', currentTab === 'search' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-800']">
-        🔍 さがす
+        さがす
       </button>
       <button @click="currentTab = 'register'" :class="['flex-1 py-2.5 rounded-xl font-bold text-sm transition', currentTab === 'register' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-800']">
-        ✏️ 登録
+        登録
       </button>
       <button @click="currentTab = 'list'" :class="['flex-1 py-2.5 rounded-xl font-bold text-sm transition', currentTab === 'list' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-800']">
-        📖 一覧・編集
+        一覧・編集
       </button>
     </nav>
 
