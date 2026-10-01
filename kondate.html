@@ -211,7 +211,7 @@
         <div class="pt-2 border-t border-gray-100">
           <label class="flex items-center gap-2 font-bold text-gray-700 cursor-pointer">
             <input type="checkbox" v-model="searchFilter.proposeSub" class="rounded text-primary focus:ring-primary">
-            サブおかずを提案 🥗
+            サブおかずも提案 🥗
           </label>
         </div>
       </section>
@@ -393,7 +393,7 @@
           <option value="牛肉">牛肉</option>
           <option value="鶏肉">鶏肉</option>
           <option value="ひき肉">ひき肉</option>
-          <option value="なし">肉なし（魚・豆腐等）</option>
+          <option value="なし">肉なし</option>
         </select>
       </div>
 
@@ -416,9 +416,9 @@
       </div>
     </main>
 
-    <!-- ================= モーダル：全情報表示＆詳細 ================= -->
+    <!-- ================= モーダル：全情報表示＆詳細（ツールバーに被らない高さ指定: max-h-[88dvh] / min-h-[72dvh]） ================= -->
     <div v-if="activeDetailModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-3 z-50">
-      <div class="bg-white rounded-3xl max-w-lg w-full max-h-[82vh] flex flex-col overflow-hidden shadow-xl my-auto">
+      <div class="bg-white rounded-3xl max-w-lg w-full max-h-[88dvh] min-h-[72dvh] flex flex-col overflow-hidden shadow-xl my-auto">
         <!-- モーダルヘッダー -->
         <div class="p-3.5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
           <span class="bg-primary/10 text-primary font-bold text-xs px-3 py-1 rounded-full">{{ activeDetailModal.category }}</span>
@@ -488,7 +488,7 @@
 
     <!-- モーダル：編集画面 -->
     <div v-if="editingRecipe" class="fixed inset-0 bg-black/50 flex items-center justify-center p-3 z-50">
-      <div class="bg-white rounded-3xl max-w-lg w-full max-h-[82vh] flex flex-col overflow-hidden p-4 sm:p-5 space-y-3 text-xs overflow-y-auto my-auto">
+      <div class="bg-white rounded-3xl max-w-lg w-full max-h-[88dvh] min-h-[72dvh] flex flex-col overflow-hidden p-4 sm:p-5 space-y-3 text-xs overflow-y-auto my-auto">
         <h3 class="font-bold text-sm text-gray-800">レシピ情報の編集</h3>
 
         <div>
@@ -610,7 +610,6 @@
         const ingredientStates = ref({});
         const isEditingIngredients = ref(false);
 
-        // ★ ジャンルとボリュームの初期値を全選択状態に設定
         const searchFilter = ref({
           maxDifficultyLevel: 2,
           genres: ['和風', '洋風', '中華', 'その他'],
