@@ -8,22 +8,27 @@
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Google Fonts: Zen Maru Gothic -->
+  <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
   <script>
     tailwind.config = {
       theme: {
         extend: {
           colors: {
-            bgMain: '#F7F4EF',      // アース系の優しいアイボリーベージュ
-            cardBg: '#FFFFFF',      // カード白
-            primary: '#E07A5F',     // テラコッタ・オレンジ（使いたい / メイン）
-            secondary: '#81B29A',   // オリーブ・セージグリーン（ある）
-            accentYellow: '#F4A261',// マスタードイエロー
-            textMain: '#3D405B',    // ダークネイビー・グレー（柔らかい黒）
-            tagMeat: '#D9534F',     // 肉類：やわらかい赤
-            tagVeg: '#2E7D32',      // 野菜：やわらかい緑
-            tagOther: '#8E24AA'     // その他/魚：やわらかいパープル
+            bgMain: '#F7F4EF',
+            cardBg: '#FFFFFF',
+            primary: '#E07A5F',
+            secondary: '#81B29A',
+            accentYellow: '#F4A261',
+            textMain: '#3D405B',
+            tagMeat: '#D9534F',
+            tagVeg: '#2E7D32',
+            tagOther: '#8E24AA'
           },
           fontFamily: {
             sans: ['"Zen Maru Gothic"', 'sans-serif'],
@@ -34,7 +39,6 @@
   </script>
   <style>
     body { font-family: 'Zen Maru Gothic', sans-serif; background-color: #F7F4EF; color: #3D405B; }
-    /* 3n状態の枠線・背景アニメーション */
     .chip-none { background-color: #FFFFFF; border: 2px solid #E5E7EB; }
     .chip-have { background-color: #E8F5E9; border: 2px solid #81B29A; font-weight: bold; }
     .chip-want { background-color: #FDF2E9; border: 2px solid #E07A5F; font-weight: bold; }
@@ -48,21 +52,31 @@
       <h1 class="text-2xl font-bold text-primary flex items-center gap-2">
         <span>🍳</span> こんだてナビ
       </h1>
-      <button @click="showApiModal = true" class="text-xs bg-white px-3 py-1.5 rounded-full border border-gray-300 shadow-sm hover:bg-gray-50 transition">
-        ⚙️ Gemini API設定
-      </button>
+      <div class="flex gap-2">
+        <button @click="showFirebaseModal = true" class="text-xs bg-white px-3 py-1.5 rounded-full border border-gray-300 shadow-sm hover:bg-gray-50 transition">
+          🔥 Firebase設定
+        </button>
+        <button @click="showApiModal = true" class="text-xs bg-white px-3 py-1.5 rounded-full border border-gray-300 shadow-sm hover:bg-gray-50 transition">
+          ⚙️ Gemini API
+        </button>
+      </div>
     </header>
+
+    <!-- Firebase未接続警告バー -->
+    <div v-if="!isFirebaseConnected" class="mb-4 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-2xl text-xs flex justify-between items-center">
+      <span>⚠️ Firebase未設定のため、現在は端末保存(ローカル)モードです。複数端末連携には右上「Firebase設定」から設定を行ってください。</span>
+    </div>
 
     <!-- メインナビゲーション (タブ) -->
     <nav class="flex rounded-2xl bg-white p-1.5 shadow-sm mb-6 border border-gray-100">
       <button @click="currentTab = 'search'" :class="['flex-1 py-2.5 rounded-xl font-bold text-sm transition', currentTab === 'search' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-800']">
-        🔍 献立をさがす
+        献立をさがす
       </button>
       <button @click="currentTab = 'register'" :class="['flex-1 py-2.5 rounded-xl font-bold text-sm transition', currentTab === 'register' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-800']">
-        ✏️ レシピ登録
+        レシピ登録
       </button>
       <button @click="currentTab = 'list'" :class="['flex-1 py-2.5 rounded-xl font-bold text-sm transition', currentTab === 'list' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-800']">
-        📖 一覧・編集
+        一覧・編集
       </button>
     </nav>
 
@@ -72,10 +86,10 @@
       <!-- モード切り替え -->
       <div class="flex gap-3">
         <button @click="searchMode = 'dinner'" :class="['flex-1 py-2 rounded-xl text-sm font-bold border transition', searchMode === 'dinner' ? 'bg-accentYellow text-white border-accentYellow shadow-sm' : 'bg-white text-gray-600 border-gray-200']">
-          🌙 夕飯モード
+          夕飯モード
         </button>
         <button @click="searchMode = 'lunch'" :class="['flex-1 py-2 rounded-xl text-sm font-bold border transition', searchMode === 'lunch' ? 'bg-secondary text-white border-secondary shadow-sm' : 'bg-white text-gray-600 border-gray-200']">
-          ☀️ 簡単・昼食モード
+          簡単・昼食モード
         </button>
       </div>
 
@@ -83,7 +97,7 @@
       <section class="bg-white p-4 sm:p-5 rounded-2xl shadow-sm border border-gray-100">
         <div class="flex justify-between items-center mb-2">
           <h2 class="font-bold text-sm text-gray-700">食材を選ぶ</h2>
-          <span class="text-xs text-gray-400">タップ: 1回ある(緑) / 2回使いたい(橙)</span>
+          <span class="text-xs text-gray-400">タップ: 1回ある / 2回使いたい</span>
         </div>
 
         <div class="space-y-3">
@@ -104,7 +118,6 @@
           </div>
         </div>
 
-        <!-- カスタム食材の検索/追加 -->
         <div class="mt-4 pt-3 border-t border-gray-100 flex gap-2">
           <input v-model="customIngredientInput" placeholder="リストにない食材を入力..." class="flex-1 text-xs px-3 py-2 border border-gray-200 rounded-xl focus:outline-none focus:border-primary">
           <button @click="addCustomIngredient" class="bg-gray-100 text-gray-700 text-xs px-3 py-2 rounded-xl font-bold hover:bg-gray-200">追加</button>
@@ -118,8 +131,8 @@
             <label class="block font-bold text-gray-600 mb-1">むずかしさ (指定以下)</label>
             <select v-model="searchFilter.maxDifficulty" class="w-full p-2 border border-gray-200 rounded-xl">
               <option value="かんたん">かんたん</option>
-              <option value="ふつう">ふつう以下</option>
-              <option value="むずかしい">むずかしい以下</option>
+              <option value="ふつう">ふつう</option>
+              <option value="むずかしい">むずかしい</option>
             </select>
           </div>
           <div>
@@ -138,9 +151,9 @@
             <label class="block font-bold text-gray-600 mb-1">気温</label>
             <select v-model="searchFilter.temp" class="w-full p-2 border border-gray-200 rounded-xl">
               <option value="">指定なし</option>
-              <option value="暑い日">暑い日</option>
-              <option value="寒い日">寒い日</option>
-              <option value="普通">普通</option>
+              <option value="暑い">暑い</option>
+              <option value="寒い">寒い</option>
+              <option value="ふつう">ふつう</option>
             </select>
           </div>
           <div class="flex items-center pt-4">
@@ -164,8 +177,7 @@
           <span v-if="isRelaxedSearch" class="text-xs text-primary font-normal">※条件をゆるめて表示中（不足食材が少ない順）</span>
         </h3>
 
-        <div v-for="(item, idx) in searchResults" :key="item.id" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative">
-          <!-- マッチ度バッジ -->
+        <div v-for="item in searchResults" :key="item.id" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative">
           <div class="absolute top-4 right-4 bg-fuchsia-50 text-fuchsia-600 font-bold text-xs px-2.5 py-1 rounded-full border border-fuchsia-100">
             マッチ度 {{ item.matchScore }}%
           </div>
@@ -176,26 +188,25 @@
               <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-bold">{{ item.category }}</span>
               <h4 class="font-bold text-base text-gray-800 mt-1">{{ item.name }}</h4>
               <p class="text-xs text-gray-500 mt-0.5">むずかしさ: {{ item.difficulty }} | {{ item.genre }}</p>
-              <p class="text-xs text-gray-600 mt-1">メイン材料: <span class="font-bold">{{ item.ingredients.join(', ') }}</span></p>
+              <p class="text-xs text-gray-600 mt-1">メイン材料: <span class="font-bold">{{ item.ingredients ? item.ingredients.join(', ') : '' }}</span></p>
             </div>
           </div>
 
-          <!-- サブおかず提案（表示フラグあり時） -->
+          <!-- サブおかず提案 -->
           <div v-if="searchFilter.proposeSub && item.subDish" class="mt-3 p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 flex justify-between items-center">
             <div>
               <p class="text-xs font-bold text-emerald-800">🥗 合うサブおかず提案</p>
-              <p class="text-xs font-bold text-gray-800 mt-0.5">{{ item.subDish.name }} <span class="text-gray-500 font-normal">({{ item.subDish.ingredients.join(', ') }})</span></p>
+              <p class="text-xs font-bold text-gray-800 mt-0.5">{{ item.subDish.name }} <span class="text-gray-500 font-normal">({{ item.subDish.ingredients ? item.subDish.ingredients.join(', ') : '' }})</span></p>
             </div>
             <button @click="rerollSubDish(item)" class="text-xs bg-white text-emerald-700 px-2 py-1 rounded-lg border border-emerald-200 shadow-sm hover:bg-emerald-50">
               🔄 交代
             </button>
           </div>
 
-          <!-- フッターアクション -->
           <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
             <span class="text-gray-400">前回作った日: {{ item.lastMadeDate || 'なし' }} (作成: {{ item.makeCount || 0 }}回)</span>
             <button @click="markAsMade(item)" class="bg-secondary text-white font-bold px-3 py-1.5 rounded-xl hover:opacity-90 transition shadow-sm">
-              ✨ 今日作った！
+              作った！
             </button>
           </div>
         </div>
@@ -213,7 +224,6 @@
     <main v-if="currentTab === 'register'" class="space-y-4 bg-white p-5 rounded-2xl shadow-sm border border-gray-100 text-xs">
       <h2 class="font-bold text-sm text-gray-700">新しいレシピを登録</h2>
 
-      <!-- Gemini AI自動抽出エリア -->
       <div class="p-3 bg-orange-50 rounded-xl border border-orange-200 space-y-2">
         <p class="font-bold text-primary flex items-center gap-1">✨ AI自動入力 (Gemini)</p>
         <p class="text-gray-500">レシピのURL、または写真を添付するとAIが自動解析して下の欄を埋めます。</p>
@@ -235,7 +245,6 @@
 
       <hr class="border-gray-100">
 
-      <!-- フォーム本体 -->
       <div class="space-y-3">
         <div>
           <label class="block font-bold text-gray-600 mb-1">カテゴリ *</label>
@@ -279,16 +288,16 @@
           <div>
             <label class="block font-bold text-gray-600 mb-1">おすすめの気温</label>
             <select v-model="newRecipe.temp" class="w-full p-2 border border-gray-200 rounded-xl">
-              <option value="普通">普通</option>
-              <option value="暑い日">暑い日</option>
-              <option value="寒い日">寒い日</option>
+              <option value="ふつう">ふつう</option>
+              <option value="暑い">暑い</option>
+              <option value="寒い">寒い</option>
             </select>
           </div>
           <div>
             <label class="block font-bold text-gray-600 mb-1">特徴① (食べ方)</label>
             <select v-model="newRecipe.feature1" class="w-full p-2 border border-gray-200 rounded-xl">
-              <option value="別々">別々で食べる</option>
-              <option value="一緒に">ご飯と一緒に食べる</option>
+              <option value="別々">別々</option>
+              <option value="一緒に">一緒に</option>
             </select>
           </div>
         </div>
@@ -320,18 +329,30 @@
           <button @click="deleteRecipe(recipe.id)" class="absolute top-3 right-3 text-gray-300 hover:text-red-500 font-bold">✕</button>
           <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-bold">{{ recipe.category }}</span>
           <h4 class="font-bold text-sm text-gray-800 mt-1">{{ recipe.name }}</h4>
-          <p class="text-gray-500 mt-0.5">材料: {{ recipe.ingredients.join(', ') }}</p>
+          <p class="text-gray-500 mt-0.5">材料: {{ recipe.ingredients ? recipe.ingredients.join(', ') : '' }}</p>
           <p class="text-gray-400 mt-1">最終作成: {{ recipe.lastMadeDate || '記録なし' }} (作成数: {{ recipe.makeCount || 0 }}回)</p>
         </div>
       </div>
     </main>
 
+    <!-- Firebase Key 設定モーダル -->
+    <div v-if="showFirebaseModal" class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
+      <div class="bg-white p-5 rounded-2xl max-w-sm w-full space-y-3 text-xs">
+        <h3 class="font-bold text-sm text-gray-800">Firebase 設定 (複数端末同期)</h3>
+        <p class="text-gray-500">Firebase Consoleのプロジェクト設定から「firebaseConfig」オブジェクトの内容を貼り付けてください。</p>
+        <textarea v-model="firebaseConfigInput" rows="6" placeholder='{\n  "apiKey": "...",\n  "projectId": "..."\n}' class="w-full p-2 border border-gray-200 rounded-xl font-mono text-[10px]"></textarea>
+        <div class="flex justify-end gap-2 pt-2">
+          <button @click="showFirebaseModal = false" class="px-3 py-1.5 text-gray-500">キャンセル</button>
+          <button @click="saveFirebaseConfig" class="px-4 py-1.5 bg-primary text-white rounded-xl font-bold">保存して接続</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Gemini API Key モーダル -->
     <div v-if="showApiModal" class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
       <div class="bg-white p-5 rounded-2xl max-w-sm w-full space-y-3 text-xs">
         <h3 class="font-bold text-sm text-gray-800">Gemini APIキーの設定</h3>
-        <p class="text-gray-500">画像やURLからのレシピ自動抽出機能を使用する場合は、Google AI Studioで取得したAPIキーを入力してください。（ブラウザ内にのみ保存されます）</p>
-        <input v-model="apiKey" placeholder="AIzaSy..." class="w-full p-2 border border-gray-200 rounded-xl">
+        <input v-model="apiKey" placeholder="AQ.Ab8..." class="w-full p-2 border border-gray-200 rounded-xl">
         <div class="flex justify-end gap-2 pt-2">
           <button @click="showApiModal = false" class="px-3 py-1.5 text-gray-500">キャンセル</button>
           <button @click="saveApiKey" class="px-4 py-1.5 bg-primary text-white rounded-xl font-bold">保存</button>
@@ -346,27 +367,40 @@
 
     createApp({
       setup() {
-        // タブ・モード
         const currentTab = ref('search');
         const searchMode = ref('dinner');
         const showApiModal = ref(false);
+        const showFirebaseModal = ref(false);
         const apiKey = ref('');
+        const firebaseConfigInput = ref('');
+        const isFirebaseConnected = ref(false);
+        let db = null;
 
-        // 基本食材リスト（白背景、文字色カテゴリ分け）
+        // ★ デフォルトで埋め込む Firebase 設定
+        const initialFirebaseConfig = {
+          apiKey: "AIzaSyC0kQSvq9TMfjcwET06ZQU0xiK0vGVТеЗM",
+          authDomain: "kondateapp-5450a.firebaseapp.com",
+          projectId: "kondateapp-5450a",
+          storageBucket: "kondateapp-5450a.firebasestorage.app",
+          messagingSenderId: "40423955488",
+          appId: "1:40423955488:web:79f2767bb43518948b045"
+        };
+
+        // ★ デフォルトで埋め込む Gemini APIキー
+        const initialGeminiApiKey = "AQ.Ab8RN6LH84RT0Gtt2UuEdb4-6IWg4EZZAR0fO0WdUMFjvHuYnA";
+
         const defaultIngredients = ref([
           { name: '豚肉', category: '肉類' }, { name: '牛肉', category: '肉類' },
-          { name: '鶏肉', category: '肉類' }, { name: 'ひき肉', category: '肉類' },
-          { name: 'キャベツ', category: '野菜' }, { name: '玉ねぎ', category: '野菜' },
-          { name: '人参', category: '野菜' }, { name: 'じゃがいも', category: '野菜' },
-          { name: 'ナス', category: '野菜' }, { name: '豆腐', category: 'その他' },
-          { name: '卵', category: 'その他' }, { name: '魚', category: 'その他' }
+          { name: '鶏むね肉', category: '肉類' }, { name: '豚ひき肉', category: '肉類' },
+          { name: 'ねぎ', category: '野菜' }, { name: 'もやし', category: '野菜' },
+          { name: 'にら', category: '野菜' }, { name: 'じゃがいも', category: '野菜' },
+          { name: '玉ねぎ', category: '野菜' }, { name: '豆腐', category: 'その他' },
+          { name: '油揚げ', category: 'その他' }, { name: '卵', category: 'その他' }
         ]);
 
-        // 食材選択状態 ('none' | 'have' | 'want')
         const ingredientStates = ref({});
         const customIngredientInput = ref('');
 
-        // 検索フィルター
         const searchFilter = ref({
           maxDifficulty: 'ふつう',
           genre: '',
@@ -374,13 +408,11 @@
           proposeSub: true
         });
 
-        // レシピデータ
         const recipes = ref([]);
         const searchResults = ref([]);
         const hasSearched = ref(false);
         const isRelaxedSearch = ref(false);
 
-        // レシピ登録用フォーム
         const newRecipe = ref({
           category: 'メインおかず',
           name: '',
@@ -392,28 +424,54 @@
           instructions: ''
         });
 
-        // AI連携
         const aiUrlInput = ref('');
         const isAnalyzing = ref(false);
         const listFilterCategory = ref('');
 
-        // 整理用ライフサイクル
-        onMounted(() => {
-          const localRecipes = localStorage.getItem('my_recipes');
-          if (localRecipes) {
-            recipes.value = JSON.parse(localRecipes);
-          } else {
-            // 初期サンプルデータ
-            recipes.value = [
-              { id: 1, category: 'メインおかず', name: '豚の生姜焼き', ingredients: ['豚肉', '玉ねぎ'], difficulty: 'かんたん', genre: '和風', temp: '普通', makeCount: 2, lastMadeDate: '2026-09-20' },
-              { id: 2, category: 'サブおかず', name: 'きゅうりとワカメの酢の物', ingredients: ['きゅうり'], difficulty: 'かんたん', genre: '和風', temp: '暑い日', makeCount: 1, lastMadeDate: '' },
-              { id: 3, category: 'ごはんもの', name: 'パラパラチャーハン', ingredients: ['卵', 'ひき肉'], difficulty: 'かんたん', genre: '中華', temp: '普通', makeCount: 0, lastMadeDate: '' }
-            ];
+        const initFirebase = (configObj) => {
+          try {
+            const config = typeof configObj === 'string' ? JSON.parse(configObj) : configObj;
+            if (!firebase.apps.length) {
+              firebase.initializeApp(config);
+            }
+            db = firebase.firestore();
+            isFirebaseConnected.value = true;
+
+            db.collection('recipes').onSnapshot((snapshot) => {
+              const items = [];
+              snapshot.forEach((doc) => {
+                items.push({ id: doc.id, ...doc.data() });
+              });
+              recipes.value = items;
+            });
+          } catch (e) {
+            console.error('Firebase接続エラー:', e);
+            isFirebaseConnected.value = false;
           }
-          apiKey.value = localStorage.getItem('gemini_api_key') || '';
+        };
+
+        onMounted(() => {
+          // Gemini APIキーの読み込み（ローカル保存がなければ初期値を使用）
+          const savedKey = localStorage.getItem('gemini_api_key');
+          if (savedKey) {
+            apiKey.value = savedKey;
+          } else {
+            apiKey.value = initialGeminiApiKey;
+            localStorage.setItem('gemini_api_key', initialGeminiApiKey);
+          }
+
+          // Firebase設定の読み込み（ローカル保存がなければ初期値を使用）
+          const savedFbConfig = localStorage.getItem('firebase_config');
+          if (savedFbConfig) {
+            firebaseConfigInput.value = savedFbConfig;
+            initFirebase(savedFbConfig);
+          } else {
+            const defaultConfigStr = JSON.stringify(initialFirebaseConfig, null, 2);
+            firebaseConfigInput.value = defaultConfigStr;
+            initFirebase(initialFirebaseConfig);
+          }
         });
 
-        // 3段階タップ状態切り替え
         const cycleIngredientState = (name) => {
           const current = ingredientStates.value[name] || 'none';
           if (current === 'none') ingredientStates.value[name] = 'have';
@@ -426,7 +484,6 @@
           if (state === 'have') return 'chip-have text-secondary';
           if (state === 'want') return 'chip-want text-primary';
           
-          // 未選択時の文字色分け
           let colorClass = 'text-tagOther';
           if (item.category === '肉類') colorClass = 'text-tagMeat';
           if (item.category === '野菜') colorClass = 'text-tagVeg';
@@ -441,7 +498,6 @@
           customIngredientInput.value = '';
         };
 
-        // マッチ度計算・検索ロジック
         const executeSearch = (relaxed = false) => {
           hasSearched.value = true;
           isRelaxedSearch.value = relaxed;
@@ -452,14 +508,12 @@
           const today = new Date();
 
           let candidates = recipes.value.filter(r => {
-            // モード別対象
             if (searchMode.value === 'lunch') {
               return r.category === 'ごはんもの' || (r.category === 'メインおかず' && r.difficulty === 'かんたん');
             }
             return r.category === 'メインおかず';
           });
 
-          // 直近4日以内除外（通常検索のみ）
           if (!relaxed) {
             candidates = candidates.filter(r => {
               if (!r.lastMadeDate) return true;
@@ -467,41 +521,31 @@
               return diffDays >= 4;
             });
 
-            // 「ある食材」以外のものが含まれていないレシピに絞り込み
             if (haveList.length > 0) {
-              candidates = candidates.filter(r => r.ingredients.every(ing => haveList.includes(ing)));
+              candidates = candidates.filter(r => r.ingredients && r.ingredients.every(ing => haveList.includes(ing)));
             }
           }
 
-          // マッチ度スコア付け & ソート
           const scored = candidates.map(r => {
-            let score = 50; // 基本点
-
-            // 使いたい食材の一致数
-            const matchedWant = r.ingredients.filter(i => wantList.includes(i)).length;
+            let score = 50;
+            const ingredientsList = r.ingredients || [];
+            const matchedWant = ingredientsList.filter(i => wantList.includes(i)).length;
             score += matchedWant * 20;
 
-            // 条件致致
             if (searchFilter.value.genre && r.genre === searchFilter.value.genre) score += 10;
             if (searchFilter.value.temp && r.temp === searchFilter.value.temp) score += 10;
-
-            // 難しさ順加点
             if (r.difficulty === 'かんたん') score += 5;
 
-            // 不足食材数（緩め検索時）
-            const missingCount = r.ingredients.filter(i => !haveList.includes(i)).length;
-
+            const missingCount = ingredientsList.filter(i => !haveList.includes(i)).length;
             return { ...r, matchScore: Math.min(score, 100), missingCount };
           });
 
-          // ソート順決定
           if (relaxed) {
             scored.sort((a, b) => a.missingCount - b.missingCount || b.matchScore - a.matchScore);
           } else {
             scored.sort((a, b) => b.matchScore - a.matchScore);
           }
 
-          // サブおかず提案紐付け
           if (searchFilter.value.proposeSub) {
             scored.forEach(mainDish => {
               mainDish.subDish = findSubDish(mainDish);
@@ -511,12 +555,12 @@
           searchResults.value = scored;
         };
 
-        // 属性一致＆食材被り無しのサブおかず提案
         const findSubDish = (mainDish) => {
+          const mainIngs = mainDish.ingredients || [];
           const subs = recipes.value.filter(r => 
             r.category === 'サブおかず' &&
             r.genre === mainDish.genre &&
-            !r.ingredients.some(ing => mainDish.ingredients.includes(ing))
+            !(r.ingredients || []).some(ing => mainIngs.includes(ing))
           );
           if (subs.length === 0) return null;
           return subs[Math.floor(Math.random() * subs.length)];
@@ -526,42 +570,60 @@
           item.subDish = findSubDish(item);
         };
 
-        // 「今日作った！」記録
-        const markAsMade = (item) => {
-          const target = recipes.value.find(r => r.id === item.id);
-          if (target) {
-            target.makeCount = (target.makeCount || 0) + 1;
-            target.lastMadeDate = new Date().toISOString().split('T')[0];
-            localStorage.setItem('my_recipes', JSON.stringify(recipes.value));
-            alert(`「${target.name}」を作った日に記録しました！`);
+        const markAsMade = async (item) => {
+          const newCount = (item.makeCount || 0) + 1;
+          const newDate = new Date().toISOString().split('T')[0];
+
+          if (isFirebaseConnected.value && db) {
+            await db.collection('recipes').doc(String(item.id)).update({
+              makeCount: newCount,
+              lastMadeDate: newDate
+            });
+          } else {
+            const target = recipes.value.find(r => r.id === item.id);
+            if (target) {
+              target.makeCount = newCount;
+              target.lastMadeDate = newDate;
+              localStorage.setItem('my_recipes', JSON.stringify(recipes.value));
+            }
           }
+          alert(`「${item.name}」を作った日に記録しました！`);
         };
 
-        // レシピ保存
-        const saveRecipe = () => {
+        const saveRecipe = async () => {
           if (!newRecipe.value.name.trim()) return alert('料理名を入力してください');
           const ingredients = newRecipe.value.ingredientsStr.split(/[,、]/).map(s => s.trim()).filter(Boolean);
           
-          recipes.value.push({
-            id: Date.now(),
+          const recipeData = {
             ...newRecipe.value,
             ingredients,
             makeCount: 0,
             lastMadeDate: ''
-          });
+          };
 
-          localStorage.setItem('my_recipes', JSON.stringify(recipes.value));
+          if (isFirebaseConnected.value && db) {
+            await db.collection('recipes').add(recipeData);
+          } else {
+            recipes.value.push({
+              id: String(Date.now()),
+              ...recipeData
+            });
+            localStorage.setItem('my_recipes', JSON.stringify(recipes.value));
+          }
+
           alert('レシピを保存しました！');
-          
-          // フォームリセット
           newRecipe.value = { category: 'メインおかず', name: '', ingredientsStr: '', difficulty: 'ふつう', genre: '和風', temp: '普通', feature1: '別々', instructions: '' };
           currentTab.value = 'list';
         };
 
-        const deleteRecipe = (id) => {
+        const deleteRecipe = async (id) => {
           if (!confirm('本当に削除しますか？')) return;
-          recipes.value = recipes.value.filter(r => r.id !== id);
-          localStorage.setItem('my_recipes', JSON.stringify(recipes.value));
+          if (isFirebaseConnected.value && db) {
+            await db.collection('recipes').doc(String(id)).delete();
+          } else {
+            recipes.value = recipes.value.filter(r => r.id !== id);
+            localStorage.setItem('my_recipes', JSON.stringify(recipes.value));
+          }
         };
 
         const filteredList = computed(() => {
@@ -569,18 +631,23 @@
           return recipes.value.filter(r => r.category === listFilterCategory.value);
         });
 
-        // Gemini API保存
+        const saveFirebaseConfig = () => {
+          localStorage.setItem('firebase_config', firebaseConfigInput.value);
+          initFirebase(firebaseConfigInput.value);
+          showFirebaseModal.value = false;
+        };
+
         const saveApiKey = () => {
           localStorage.setItem('gemini_api_key', apiKey.value);
           showApiModal.value = false;
         };
 
         return {
-          currentTab, searchMode, showApiModal, apiKey, defaultIngredients, ingredientStates,
-          customIngredientInput, searchFilter, searchResults, hasSearched, isRelaxedSearch,
-          newRecipe, aiUrlInput, isAnalyzing, listFilterCategory, filteredList,
+          currentTab, searchMode, showApiModal, showFirebaseModal, apiKey, firebaseConfigInput, isFirebaseConnected,
+          defaultIngredients, ingredientStates, customIngredientInput, searchFilter, searchResults, hasSearched,
+          isRelaxedSearch, newRecipe, aiUrlInput, isAnalyzing, listFilterCategory, filteredList,
           cycleIngredientState, getIngredientClass, addCustomIngredient, executeSearch,
-          rerollSubDish, markAsMade, saveRecipe, deleteRecipe, saveApiKey
+          rerollSubDish, markAsMade, saveRecipe, deleteRecipe, saveFirebaseConfig, saveApiKey
         };
       }
     }).mount('#app');
