@@ -40,10 +40,9 @@
   <style>
     body { font-family: 'Zen Maru Gothic', sans-serif; background-color: #F7F4EF; color: #3D405B; }
     .chip-none { background-color: #FFFFFF; border: 2px solid #E5E7EB; }
-    .chip-have { background-color: #E8F5E9; border: 2px solid #81B29A; font-weight: bold; }
-    .chip-want { background-color: #FDF2E9; border: 2px solid #E07A5F; font-weight: bold; }
-    .draggable-chip { cursor: grab; user-select: none; }
-    .draggable-chip:active { cursor: grabbing; opacity: 0.6; }
+    .chip-want { background-color: #FDF2E9; border: 2px solid #E07A5F; font-weight: bold; } /* 1回タップ: オレンジ */
+    .chip-have { background-color: #E8F5E9; border: 2px solid #81B29A; font-weight: bold; } /* 2回タップ: 緑 */
+    .chip-item { user-select: none; }
   </style>
 </head>
 <body class="p-3 sm:p-6 max-w-2xl mx-auto min-h-screen pb-24">
@@ -108,7 +107,8 @@
           <div v-for="cat in ['肉類', '野菜', 'その他']" :key="cat">
             <div class="flex justify-between items-center mb-1.5">
               <p class="text-xs font-bold text-gray-400">{{ cat }}</p>
-              <button @click="promptAddIngredient(cat)" class="text-[11px] bg-gray-100 text-primary px-2 py-0.5 rounded-md font-bold hover:bg-gray-200">
+              <!-- ② 編集モード時のみ＋追加ボタンを表示 -->
+              <button v-if="isEditingIngredients" @click="promptAddIngredient(cat)" class="text-[11px] bg-primary/10 text-primary px-2 py-0.5 rounded-md font-bold hover:bg-primary/20">
                 ＋追加
               </button>
             </div>
@@ -116,41 +116,43 @@
               <div 
                 v-for="(item, idx) in defaultIngredients.filter(i => i.category === cat)" 
                 :key="item.name"
-                draggable="true"
-                @dragstart="onDragStart($event, item)"
-                @dragover.prevent
-                @drop="onDrop($event, item)"
                 @click="cycleIngredientState(item.name)"
-                :class="['px-3 py-1.5 rounded-xl text-xs transition duration-150 flex items-center gap-1 draggable-chip', getIngredientClass(item)]"
+                :class="['px-3 py-1.5 rounded-xl text-xs transition duration-150 flex items-center gap-1.5 chip-item cursor-pointer', getIngredientClass(item)]"
               >
-                <span>⠿</span>
                 <span>{{ item.name }}</span>
-                <span v-if="ingredientStates[item.name] === 'want'" class="text-primary text-xs"></span>
-                <span v-else-if="ingredientStates[item.name] === 'have'" class="text-secondary text-xs"></span>
-                <button v-if="isEditingIngredients" @click.stop="removeIngredient(item.name)" class="text-xs text-red-500 font-bold ml-1">✕</button>
+                <!-- ③ タップ色のマーク（1回:オレンジ使いたい / 2回:緑ある） -->
+                <span v-if="ingredientStates[item.name] === 'want'" class="text-primary text-xs font-bold">🍊</span>
+                <span v-else-if="ingredientStates[item.name] === 'have'" class="text-secondary text-xs font-bold">🥬</span>
+
+                <!-- ② 編集モード時の移動ボタン（タップ操作で並び替え）と削除ボタン -->
+                <div v-if="isEditingIngredients" class="flex items-center gap-1 ml-1 border-l border-gray-300 pl-1">
+                  <button @click.stop="moveIngredient(item, -1)" class="text-[10px] text-gray-500 hover:text-black font-bold px-0.5">◀</button>
+                  <button @click.stop="moveIngredient(item, 1)" class="text-[10px] text-gray-500 hover:text-black font-bold px-0.5">▶</button>
+                  <button @click.stop="removeIngredient(item.name)" class="text-xs text-red-500 font-bold ml-1">✕</button>
+                </div>
               </div>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- 絞り込み条件（縦並び配置） -->
+      <!-- 絞り込み条件 -->
       <section v-if="searchMode === 'dinner'" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-4 text-xs">
-        <!-- むずかしさ（スライダー） -->
+        <!-- ① むずかしさ（3段階スライダー） -->
         <div>
           <div class="flex justify-between font-bold text-gray-700 mb-1">
             <span>むずかしさ (上限)</span>
             <span class="text-primary font-bold">レベル {{ searchFilter.maxDifficultyLevel }} ({{ getDifficultyLabel(searchFilter.maxDifficultyLevel) }})</span>
           </div>
-          <input type="range" min="1" max="5" step="1" v-model.number="searchFilter.maxDifficultyLevel" class="w-full accent-primary">
+          <input type="range" min="1" max="3" step="1" v-model.number="searchFilter.maxDifficultyLevel" class="w-full accent-primary">
           <div class="flex justify-between text-[10px] text-gray-400 mt-0.5">
             <span>1:簡単</span>
-            <span>3:ふつう</span>
-            <span>5:本格的</span>
+            <span>2:ふつう</span>
+            <span>3:本格的</span>
           </div>
         </div>
 
-        <!-- ジャンル（複数選択） -->
+        <!-- ジャンル -->
         <div>
           <label class="block font-bold text-gray-700 mb-1.5">ジャンル</label>
           <div class="flex flex-wrap gap-2">
@@ -182,7 +184,18 @@
           </select>
         </div>
 
-        <!-- サブおかず（改行配置） -->
+        <!-- ⑤ 気温の下に味付け/ボリューム（あっさり・ふつう・がっつり）を追加 -->
+        <div>
+          <label class="block font-bold text-gray-700 mb-1">味付け / ボリューム</label>
+          <select v-model="searchFilter.volume" class="w-full p-2 border border-gray-200 rounded-xl">
+            <option value="">指定なし</option>
+            <option value="あっさり">あっさり</option>
+            <option value="ふつう">ふつう</option>
+            <option value="がっつり">がっつり</option>
+          </select>
+        </div>
+
+        <!-- サブおかず提案 -->
         <div class="pt-2 border-t border-gray-100">
           <label class="flex items-center gap-2 font-bold text-gray-700 cursor-pointer">
             <input type="checkbox" v-model="searchFilter.proposeSub" class="rounded text-primary focus:ring-primary">
@@ -215,7 +228,8 @@
             <div class="flex-1 pr-16">
               <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-bold">{{ item.category }}</span>
               <h4 class="font-bold text-base text-gray-800 mt-1">{{ item.name }}</h4>
-              <p class="text-xs text-gray-500 mt-0.5">むずかしさ: Lv.{{ item.difficultyLevel || 3 }} | {{ item.genre }}</p>
+              <!-- ① むずかしさ3段階対応 & ⑤ ボリューム表示 -->
+              <p class="text-xs text-gray-500 mt-0.5">Lv.{{ item.difficultyLevel || 2 }} ({{ getDifficultyLabel(item.difficultyLevel || 2) }}) | {{ item.genre }} | {{ item.volume || 'ふつう' }}</p>
               <p class="text-xs text-gray-600 mt-1 line-clamp-1">材料: <span class="font-bold">{{ item.ingredients ? item.ingredients.join(', ') : '' }}</span></p>
             </div>
           </div>
@@ -223,7 +237,7 @@
           <!-- サブおかず提案 -->
           <div v-if="searchFilter.proposeSub && item.subDish" @click.stop class="mt-3 p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 flex justify-between items-center">
             <div>
-              <p class="text-xs font-bold text-emerald-800">🥗 合うサブおかず提案</p>
+              <p class="text-xs font-bold text-emerald-800">🥗 サブおかずを提案</p>
               <p class="text-xs font-bold text-gray-800 mt-0.5">{{ item.subDish.name }} <span class="text-gray-500 font-normal">({{ item.subDish.ingredients ? item.subDish.ingredients.join(', ') : '' }})</span></p>
             </div>
             <button @click="rerollSubDish(item)" class="text-xs bg-white text-emerald-700 px-2 py-1 rounded-lg border border-emerald-200 shadow-sm hover:bg-emerald-50">
@@ -254,7 +268,7 @@
 
       <!-- Gemini AI 解析 -->
       <div class="p-3 bg-orange-50 rounded-xl border border-orange-200 space-y-2">
-        <p class="font-bold text-primary flex items-center gap-1">✨ AI自動入力 (Gemini)</p>
+        <p class="font-bold text-primary flex items-center gap-1">AI自動入力</p>
         <div class="flex gap-2">
           <input v-model="aiUrlInput" placeholder="レシピページのURLを貼り付け..." class="flex-1 p-2 border border-gray-200 rounded-xl bg-white">
           <button @click="extractByUrl" :disabled="isAnalyzing" class="bg-primary text-white font-bold px-3 rounded-xl disabled:opacity-50">
@@ -286,7 +300,6 @@
           <input v-model="newRecipe.name" placeholder="例: 豚の生姜焼き" class="w-full p-2 border border-gray-200 rounded-xl">
         </div>
 
-        <!-- 料理画像アップロード / URL -->
         <div>
           <label class="block font-bold text-gray-600 mb-1">料理画像</label>
           <div class="flex gap-2 mb-2">
@@ -299,7 +312,6 @@
           <img v-if="newRecipe.image" :src="newRecipe.image" class="h-24 object-cover rounded-xl border border-gray-200 mt-1">
         </div>
 
-        <!-- 参考WebページのURL -->
         <div>
           <label class="block font-bold text-gray-600 mb-1">参考WebページのURL</label>
           <input v-model="newRecipe.url" placeholder="https://..." class="w-full p-2 border border-gray-200 rounded-xl">
@@ -311,14 +323,13 @@
         </div>
 
         <div class="grid grid-cols-2 gap-3">
+          <!-- ① むずかしさを3段階に変更 -->
           <div>
-            <label class="block font-bold text-gray-600 mb-1">むずかしさ (1〜5)</label>
+            <label class="block font-bold text-gray-600 mb-1">むずかしさ (1〜3)</label>
             <select v-model.number="newRecipe.difficultyLevel" class="w-full p-2 border border-gray-200 rounded-xl">
               <option :value="1">1 (簡単)</option>
-              <option :value="2">2 (やや簡単)</option>
-              <option :value="3">3 (ふつう)</option>
-              <option :value="4">4 (やや大変)</option>
-              <option :value="5">5 (本格的)</option>
+              <option :value="2">2 (ふつう)</option>
+              <option :value="3">3 (本格的)</option>
             </select>
           </div>
           <div>
@@ -330,6 +341,16 @@
               <option value="その他">その他</option>
             </select>
           </div>
+        </div>
+
+        <!-- ⑤ 登録フォームにボリューム項目を追加 -->
+        <div>
+          <label class="block font-bold text-gray-600 mb-1">味付け / ボリューム</label>
+          <select v-model="newRecipe.volume" class="w-full p-2 border border-gray-200 rounded-xl">
+            <option value="あっさり">あっさり</option>
+            <option value="ふつう">ふつう</option>
+            <option value="がっつり">がっつり</option>
+          </select>
         </div>
 
         <div>
@@ -350,16 +371,28 @@
 
     <!-- ================= ③ 閲覧・一覧 ================= -->
     <main v-if="currentTab === 'list'" class="space-y-4">
-      <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex gap-2 text-xs">
+      <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2 text-xs sm:flex-row">
+        <!-- カテゴリ絞り込み -->
         <select v-model="listFilterCategory" class="p-2 border border-gray-200 rounded-xl flex-1">
           <option value="">すべてのカテゴリ</option>
           <option value="メインおかず">メインおかず</option>
           <option value="サブおかず">サブおかず</option>
           <option value="ごはんもの">ごはんもの</option>
         </select>
+
+        <!-- ⑥ メインおかずタブ時のみ「肉類絞り込み」を表示 -->
+        <select v-if="listFilterCategory === 'メインおかず'" v-model="listFilterMeat" class="p-2 border border-gray-200 rounded-xl flex-1 bg-orange-50/50 border-orange-200 font-bold text-primary">
+          <option value="">すべての肉類・メイン食材</option>
+          <option value="豚肉">豚肉</option>
+          <option value="牛肉">牛肉</option>
+          <option value="鶏肉">鶏肉</option>
+          <option value="ひき肉">ひき肉</option>
+          <option value="なし">肉なし（魚・豆腐等）</option>
+        </select>
       </div>
 
       <div class="space-y-3">
+        <!-- ⑥ タップすると全画面（縦長モーダル）で詳細が表示される -->
         <div v-for="recipe in filteredList" :key="recipe.id" @click="openDetailModal(recipe)" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 text-xs relative cursor-pointer hover:border-primary/50 transition">
           <button @click.stop="deleteRecipe(recipe.id)" class="absolute top-3 right-3 text-gray-300 hover:text-red-500 font-bold text-base p-1">✕</button>
           
@@ -378,11 +411,11 @@
       </div>
     </main>
 
-    <!-- ================= モーダル：全情報表示＆詳細（タブ付き） ================= -->
-    <div v-if="activeDetailModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden shadow-xl">
+    <!-- ================= モーダル：全情報表示＆詳細（④ 縦の大きさを従来比1.5倍/ほぼ全画面へ拡張） ================= -->
+    <div v-if="activeDetailModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-2 sm:p-4 z-50">
+      <div class="bg-white rounded-3xl max-w-lg w-full h-[95vh] flex flex-col overflow-hidden shadow-xl">
         <!-- モーダルヘッダー -->
-        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
           <span class="bg-primary/10 text-primary font-bold text-xs px-3 py-1 rounded-full">{{ activeDetailModal.category }}</span>
           <div class="flex gap-2">
             <button @click="startEditingActiveModal" class="text-xs bg-white border border-gray-300 font-bold px-3 py-1 rounded-xl hover:bg-gray-50">✏️ 編集</button>
@@ -390,27 +423,32 @@
           </div>
         </div>
 
-        <div class="p-5 overflow-y-auto space-y-4 text-xs">
+        <div class="p-5 overflow-y-auto space-y-4 text-xs flex-1">
           <!-- 料理画像＆タイトル -->
           <div class="flex gap-4 items-center">
-            <img v-if="activeDetailModal.image" :src="activeDetailModal.image" class="w-24 h-24 object-cover rounded-2xl border border-gray-100">
-            <div>
-              <h3 class="text-lg font-bold text-gray-800">{{ activeDetailModal.name }}</h3>
-              <p class="text-gray-500 mt-1">むずかしさ: Lv.{{ activeDetailModal.difficultyLevel || 3 }} | {{ activeDetailModal.genre || '和風' }}</p>
+            <img v-if="activeDetailModal.image" :src="activeDetailModal.image" class="w-28 h-28 object-cover rounded-2xl border border-gray-100">
+            <div class="flex-1">
+              <h3 class="text-xl font-bold text-gray-800">{{ activeDetailModal.name }}</h3>
+              <!-- ① 3段階むずかしさ & ⑤ ボリューム表示 -->
+              <p class="text-gray-500 mt-1">
+                むずかしさ: Lv.{{ activeDetailModal.difficultyLevel || 2 }} ({{ getDifficultyLabel(activeDetailModal.difficultyLevel || 2) }}) | 
+                {{ activeDetailModal.genre || '和風' }} | 
+                {{ activeDetailModal.volume || 'ふつう' }}
+              </p>
               
               <!-- 外部リンクボタン -->
-              <a v-if="activeDetailModal.url" :href="activeDetailModal.url" target="_blank" class="inline-flex items-center gap-1 mt-2 text-primary font-bold bg-orange-50 px-2.5 py-1 rounded-lg border border-orange-200 hover:underline">
-                🔗 リンクを開く
+              <a v-if="activeDetailModal.url" :href="activeDetailModal.url" target="_blank" class="inline-flex items-center gap-1 mt-2 text-primary font-bold bg-orange-50 px-3 py-1 rounded-lg border border-orange-200 hover:underline">
+                🔗 参考Webページを開く
               </a>
             </div>
           </div>
 
           <!-- タブ切り替え（材料 / 作り方） -->
           <div class="flex border-b border-gray-200">
-            <button @click="modalTab = 'ingredients'" :class="['flex-1 py-2 font-bold text-sm border-b-2 transition', modalTab === 'ingredients' ? 'border-primary text-primary' : 'border-transparent text-gray-400']">
+            <button @click="modalTab = 'ingredients'" :class="['flex-1 py-2.5 font-bold text-sm border-b-2 transition', modalTab === 'ingredients' ? 'border-primary text-primary' : 'border-transparent text-gray-400']">
               材料詳細
             </button>
-            <button @click="modalTab = 'instructions'" :class="['flex-1 py-2 font-bold text-sm border-b-2 transition', modalTab === 'instructions' ? 'border-primary text-primary' : 'border-transparent text-gray-400']">
+            <button @click="modalTab = 'instructions'" :class="['flex-1 py-2.5 font-bold text-sm border-b-2 transition', modalTab === 'instructions' ? 'border-primary text-primary' : 'border-transparent text-gray-400']">
               作り方
             </button>
           </div>
@@ -421,24 +459,24 @@
               <p class="font-bold text-gray-700 mb-1">メイン検索用タグ</p>
               <p class="text-gray-600">{{ activeDetailModal.ingredients ? activeDetailModal.ingredients.join(', ') : '未設定' }}</p>
             </div>
-            <div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-100">
-              <p class="font-bold text-gray-800 mb-2">材料と分量</p>
-              <pre class="whitespace-pre-wrap font-sans text-gray-700 leading-relaxed">{{ activeDetailModal.ingredientsDetail || activeDetailModal.ingredientsStr || '詳細な材料指定はありません。' }}</pre>
+            <div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 min-h-[200px]">
+              <p class="font-bold text-gray-800 mb-2 text-sm">材料と分量</p>
+              <pre class="whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-xs">{{ activeDetailModal.ingredientsDetail || activeDetailModal.ingredientsStr || '詳細な材料指定はありません。' }}</pre>
             </div>
           </div>
 
           <!-- タブコンテンツ：作り方 -->
           <div v-if="modalTab === 'instructions'" class="pt-1">
-            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100">
-              <p class="font-bold text-gray-800 mb-2">手順</p>
-              <pre class="whitespace-pre-wrap font-sans text-gray-700 leading-relaxed">{{ activeDetailModal.instructions || '作り方の記述はありません。' }}</pre>
+            <div class="bg-gray-50 p-4 rounded-2xl border border-gray-100 min-h-[250px]">
+              <p class="font-bold text-gray-800 mb-2 text-sm">手順</p>
+              <pre class="whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-xs">{{ activeDetailModal.instructions || '作り方の記述はありません。' }}</pre>
             </div>
           </div>
         </div>
 
-        <div class="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center text-xs">
+        <div class="p-4 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center text-xs shrink-0">
           <span class="text-gray-400">作成回数: {{ activeDetailModal.makeCount || 0 }}回</span>
-          <button @click="markAsMade(activeDetailModal)" class="bg-secondary text-white font-bold px-4 py-2 rounded-xl shadow-sm">
+          <button @click="markAsMade(activeDetailModal)" class="bg-secondary text-white font-bold px-5 py-2.5 rounded-xl shadow-sm text-sm hover:opacity-90">
             作った✨
           </button>
         </div>
@@ -447,7 +485,7 @@
 
     <!-- モーダル：編集画面 -->
     <div v-if="editingRecipe" class="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-      <div class="bg-white rounded-3xl max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden p-5 space-y-3 text-xs overflow-y-auto">
+      <div class="bg-white rounded-3xl max-w-lg w-full h-[90vh] flex flex-col overflow-hidden p-5 space-y-3 text-xs overflow-y-auto">
         <h3 class="font-bold text-sm text-gray-800">レシピ情報の編集</h3>
 
         <div>
@@ -463,6 +501,27 @@
         <div>
           <label class="block font-bold text-gray-600 mb-1">参考URL</label>
           <input v-model="editingRecipe.url" class="w-full p-2 border border-gray-200 rounded-xl">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <!-- ① むずかしさを3段階に変更 -->
+          <div>
+            <label class="block font-bold text-gray-600 mb-1">むずかしさ</label>
+            <select v-model.number="editingRecipe.difficultyLevel" class="w-full p-2 border border-gray-200 rounded-xl">
+              <option :value="1">1 (簡単)</option>
+              <option :value="2">2 (ふつう)</option>
+              <option :value="3">3 (本格的)</option>
+            </select>
+          </div>
+          <!-- ⑤ 編集画面にボリューム追加 -->
+          <div>
+            <label class="block font-bold text-gray-600 mb-1">味付け/ボリューム</label>
+            <select v-model="editingRecipe.volume" class="w-full p-2 border border-gray-200 rounded-xl">
+              <option value="あっさり">あっさり</option>
+              <option value="ふつう">ふつう</option>
+              <option value="がっつり">がっつり</option>
+            </select>
+          </div>
         </div>
 
         <div>
@@ -548,12 +607,13 @@
 
         const ingredientStates = ref({});
         const isEditingIngredients = ref(false);
-        const draggedItem = ref(null);
 
+        // ① むずかしさ上限を3に変更 & ⑤ volume追加
         const searchFilter = ref({
-          maxDifficultyLevel: 3,
+          maxDifficultyLevel: 2,
           genres: [],
           temp: '',
+          volume: '',
           feature1: '',
           proposeSub: true
         });
@@ -563,6 +623,7 @@
         const hasSearched = ref(false);
         const isRelaxedSearch = ref(false);
 
+        // ① むずかしさ default 2 & ⑤ volume default 'ふつう'
         const newRecipe = ref({
           category: 'メインおかず',
           name: '',
@@ -570,8 +631,9 @@
           url: '',
           ingredientsStr: '',
           ingredientsDetail: '',
-          difficultyLevel: 3,
+          difficultyLevel: 2,
           genre: '和風',
+          volume: 'ふつう',
           temp: '普通',
           feature1: '別々',
           instructions: ''
@@ -584,6 +646,7 @@
         const aiUrlInput = ref('');
         const isAnalyzing = ref(false);
         const listFilterCategory = ref('');
+        const listFilterMeat = ref(''); // ⑥ 肉類絞り込み用
 
         const initFirebase = (configObj) => {
           try {
@@ -618,36 +681,36 @@
           }
         });
 
-        // ドラッグ＆ドロップ処理
-        const onDragStart = (e, item) => {
-          draggedItem.value = item;
-          e.dataTransfer.effectAllowed = 'move';
-        };
-
-        const onDrop = (e, targetItem) => {
-          if (!draggedItem.value || draggedItem.value.name === targetItem.name) return;
+        // ② タップでの配列内並び替え（左右移動）
+        const moveIngredient = (item, direction) => {
           const list = defaultIngredients.value;
-          const fromIdx = list.findIndex(i => i.name === draggedItem.value.name);
-          const toIdx = list.findIndex(i => i.name === targetItem.name);
-          if (fromIdx !== -1 && toIdx !== -1) {
-            const item = list.splice(fromIdx, 1)[0];
-            list.splice(toIdx, 0, item);
+          const index = list.findIndex(i => i.name === item.name);
+          if (index === -1) return;
+          const newIndex = index + direction;
+          if (newIndex >= 0 && newIndex < list.length) {
+            const temp = list[index];
+            list[index] = list[newIndex];
+            list[newIndex] = temp;
           }
-          draggedItem.value = null;
         };
 
+        // ③ タップ色の切り替え（1回: want/オレンジ → 2回: have/緑 → 3回: none）
         const cycleIngredientState = (name) => {
           if (isEditingIngredients.value) return;
           const current = ingredientStates.value[name] || 'none';
-          if (current === 'none') ingredientStates.value[name] = 'have';
-          else if (current === 'have') ingredientStates.value[name] = 'want';
-          else ingredientStates.value[name] = 'none';
+          if (current === 'none') {
+            ingredientStates.value[name] = 'want'; // 1回タップ: オレンジ
+          } else if (current === 'want') {
+            ingredientStates.value[name] = 'have'; // 2回タップ: 緑
+          } else {
+            ingredientStates.value[name] = 'none'; // 3回タップ: 未選択
+          }
         };
 
         const getIngredientClass = (item) => {
           const state = ingredientStates.value[item.name] || 'none';
-          if (state === 'have') return 'chip-have text-secondary';
           if (state === 'want') return 'chip-want text-primary';
+          if (state === 'have') return 'chip-have text-secondary';
           
           let colorClass = 'text-tagOther';
           if (item.category === '肉類') colorClass = 'text-tagMeat';
@@ -667,8 +730,9 @@
           delete ingredientStates.value[name];
         };
 
+        // ① 3段階用のラベル変換
         const getDifficultyLabel = (lvl) => {
-          const map = { 1: '簡単', 2: 'やや簡単', 3: 'ふつう', 4: 'やや大変', 5: '本格的' };
+          const map = { 1: '簡単', 2: 'ふつう', 3: '本格的' };
           return map[lvl] || 'ふつう';
         };
 
@@ -681,7 +745,7 @@
 
           let candidates = recipes.value.filter(r => {
             if (searchMode.value === 'lunch') {
-              return r.category === 'ごはんもの' || (r.category === 'メインおかず' && (r.difficultyLevel || 3) <= 2);
+              return r.category === 'ごはんもの' || (r.category === 'メインおかず' && (r.difficultyLevel || 2) <= 1);
             }
             return r.category === 'メインおかず';
           });
@@ -702,6 +766,9 @@
             score += matchedWant * 20;
 
             if (searchFilter.value.temp && r.temp === searchFilter.value.temp) score += 10;
+            // ⑤ ボリューム（あっさり・ふつう・がっつり）の一致でスコア加算
+            if (searchFilter.value.volume && r.volume === searchFilter.value.volume) score += 10;
+
             const missingCount = ingredientsList.filter(i => !haveList.includes(i)).length;
             return { ...r, matchScore: Math.min(score, 100), missingCount };
           });
@@ -714,7 +781,6 @@
 
           searchResults.value = scored;
 
-          // 結果位置へのスムーズスクロール
           nextTick(() => {
             const el = document.getElementById('search-results-anchor');
             if (el) el.scrollIntoView({ behavior: 'smooth' });
@@ -776,7 +842,7 @@
           }
 
           alert('レシピを保存しました');
-          newRecipe.value = { category: 'メインおかず', name: '', image: '', url: '', ingredientsStr: '', ingredientsDetail: '', difficultyLevel: 3, genre: '和風', temp: '普通', feature1: '別々', instructions: '' };
+          newRecipe.value = { category: 'メインおかず', name: '', image: '', url: '', ingredientsStr: '', ingredientsDetail: '', difficultyLevel: 2, genre: '和風', volume: 'ふつう', temp: '普通', feature1: '別々', instructions: '' };
           currentTab.value = 'list';
         };
 
@@ -823,9 +889,29 @@
           }
         };
 
+        // ⑥ 一覧画面のカテゴリ & メインおかず時の肉類絞り込みロジック
         const filteredList = computed(() => {
-          if (!listFilterCategory.value) return recipes.value;
-          return recipes.value.filter(r => r.category === listFilterCategory.value);
+          let list = recipes.value;
+          
+          if (listFilterCategory.value) {
+            list = list.filter(r => r.category === listFilterCategory.value);
+          }
+
+          if (listFilterCategory.value === 'メインおかず' && listFilterMeat.value) {
+            const targetMeat = listFilterMeat.value;
+            const allMeats = ['豚肉', '牛肉', '鶏肉', 'ひき肉'];
+
+            list = list.filter(r => {
+              const ingsStr = (r.ingredients ? r.ingredients.join(' ') : '') + (r.ingredientsDetail || '');
+              if (targetMeat === 'なし') {
+                // お肉キーワードが一切含まれないものを抽出
+                return !allMeats.some(m => ingsStr.includes(m));
+              }
+              return ingsStr.includes(targetMeat);
+            });
+          }
+
+          return list;
         });
 
         const saveFirebaseConfig = () => {
@@ -843,8 +929,8 @@
           currentTab, searchMode, showApiModal, showFirebaseModal, apiKey, firebaseConfigInput, isFirebaseConnected,
           defaultIngredients, ingredientStates, isEditingIngredients, searchFilter, searchResults, hasSearched,
           isRelaxedSearch, newRecipe, activeDetailModal, modalTab, editingRecipe, aiUrlInput, isAnalyzing,
-          listFilterCategory, filteredList,
-          onDragStart, onDrop, cycleIngredientState, getIngredientClass, promptAddIngredient, removeIngredient,
+          listFilterCategory, listFilterMeat, filteredList,
+          moveIngredient, cycleIngredientState, getIngredientClass, promptAddIngredient, removeIngredient,
           getDifficultyLabel, executeSearch, rerollSubDish, openDetailModal, startEditingActiveModal,
           handleRecipeImageUpload, saveRecipe, saveEditedRecipe, markAsMade, deleteRecipe,
           saveFirebaseConfig, saveApiKey
