@@ -55,7 +55,7 @@
       </h1>
       <!-- 「つくるメモ」ボタン (ヘッダー右上) -->
       <button @click="showPinMemoModal = true" class="text-xs bg-white text-gray-800 font-bold px-3.5 py-1.5 rounded-full border border-gray-300 shadow-sm hover:bg-orange-50 transition flex items-center gap-1">
-        <span>つくるメモ 🥖</span>
+        <span>つくるメモ 🍚</span>
         <span v-if="pinMemos.length > 0" class="bg-primary text-white font-bold text-[10px] px-1.5 py-0.2 rounded-full">{{ pinMemos.length }}</span>
       </button>
     </header>
@@ -270,9 +270,9 @@
           <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
             <span class="text-gray-400">前回作成: {{ item.lastMadeDate || 'なし' }}</span>
             <div class="flex gap-2">
-              <!-- メモ🥖 ボタン -->
+              <!-- メモ🍚 ボタン -->
               <button @click.stop="togglePinMemo(item)" :class="['font-bold px-3 py-1.5 rounded-xl transition shadow-sm border', isPinned(item.id) ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">
-                {{ isPinned(item.id) ? 'メモ済🥖' : 'メモ🥖' }}
+                {{ isPinned(item.id) ? 'メモ済🍚' : 'メモ🍚' }}
               </button>
               <!-- 作った✨ ボタン -->
               <button @click.stop="markAsMade(item)" class="bg-secondary text-white font-bold px-3 py-1.5 rounded-xl hover:opacity-90 transition shadow-sm">
@@ -296,7 +296,7 @@
       
       <!-- 料理名キーワード検索バー -->
       <section class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-2">
-        <h2 class="font-bold text-xs text-gray-700">🔍 料理名からさがす</h2>
+        <h2 class="font-bold text-xs text-gray-700">🔍 さがす</h2>
         <div class="relative">
           <input v-model="keywordQuery" placeholder="料理名を入力... (例: ハンバーグ、生姜焼き)" class="w-full p-2.5 pr-10 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-primary">
           <span v-if="keywordQuery" @click="keywordQuery = ''" class="absolute right-3 top-2 text-gray-400 hover:text-gray-600 font-bold cursor-pointer text-sm">✕</span>
@@ -362,7 +362,7 @@
         
         <!-- テキスト直接貼り付け解析欄 -->
         <div class="space-y-1">
-          <textarea v-model="aiTextRaw" rows="3" placeholder="レシピ文や材料・作り方テキストを貼り付け..." class="w-full p-2 border border-gray-200 rounded-xl bg-white text-xs"></textarea>
+          <textarea v-model="aiTextRaw" rows="3" placeholder="テキストを貼り付け..." class="w-full p-2 border border-gray-200 rounded-xl bg-white text-xs"></textarea>
           <button @click="extractByText" :disabled="isAnalyzing" class="w-full py-2 bg-primary text-white font-bold rounded-xl disabled:opacity-50">
             {{ isAnalyzing ? '解析中...' : '📝 テキストからAI解析' }}
           </button>
@@ -372,7 +372,7 @@
         <div class="flex items-center gap-2 pt-1 border-t border-orange-100">
           <input type="file" ref="aiImageInput" accept="image/*" class="hidden" @change="extractByImage">
           <button @click="$refs.aiImageInput.click()" :disabled="isAnalyzing" class="w-full py-2 bg-white border border-gray-300 font-bold text-gray-700 rounded-xl hover:bg-gray-50">
-            📷 料理写真/レシピ画像から読み込み
+            📷 画像から読み込み
           </button>
         </div>
       </div>
@@ -399,7 +399,7 @@
           <div class="flex gap-2 mb-2">
             <input type="file" ref="recipeImageFile" accept="image/*" class="hidden" @change="handleRecipeImageUpload">
             <button @click="$refs.recipeImageFile.click()" class="bg-gray-100 border border-gray-200 text-gray-700 font-bold px-3 py-1.5 rounded-xl">
-              📁 端末から画像選択 (自動軽量化)
+              📁 端末から画像選択
             </button>
             <input v-model="newRecipe.image" placeholder="または画像のURLを入力..." class="flex-1 p-2 border border-gray-200 rounded-xl">
           </div>
@@ -507,7 +507,7 @@
               </p>
               
               <a v-if="activeDetailModal.url" :href="activeDetailModal.url" target="_blank" class="inline-flex items-center gap-1 mt-1.5 text-primary font-bold bg-orange-50 px-2.5 py-0.5 rounded-lg border border-orange-200 text-[11px] hover:underline">
-                🔗 参考Webページを開く
+                🔗 Webを開く
               </a>
             </div>
           </div>
@@ -533,7 +533,7 @@
             </div>
             <div class="bg-amber-50/50 p-3.5 rounded-2xl border border-amber-100 min-h-[140px]">
               <p class="font-bold text-gray-800 mb-1.5 text-xs">材料と分量</p>
-              <pre class="whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-xs">{{ activeDetailModal.ingredientsDetail || '詳細な材料指定はありません。' }}</pre>
+              <pre class="whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-xs">{{ activeDetailModal.ingredientsDetail || '未入力' }}</pre>
             </div>
           </div>
 
@@ -573,9 +573,9 @@
         <div class="p-3.5 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center text-xs shrink-0">
           <span class="text-gray-400">作成: {{ activeDetailModal.makeCount || 0 }}回</span>
           <div class="flex gap-2">
-            <!-- メモ🥖 ボタン -->
+            <!-- メモ🍚 ボタン -->
             <button @click="togglePinMemo(activeDetailModal)" :class="['font-bold px-3 py-1.5 rounded-xl transition shadow-sm border', isPinned(activeDetailModal.id) ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">
-              {{ isPinned(activeDetailModal.id) ? 'メモ済🥖' : 'メモ🥖' }}
+              {{ isPinned(activeDetailModal.id) ? 'メモ済🍚' : 'メモ🍚' }}
             </button>
             <!-- 作った✨ ボタン -->
             <button @click="markAsMade(activeDetailModal)" class="bg-secondary text-white font-bold px-4 py-2 rounded-xl shadow-sm text-xs hover:opacity-90">
@@ -586,12 +586,12 @@
       </div>
     </div>
 
-    <!-- モーダル：つくるメモ🥖 (ピン留め一覧) -->
+    <!-- モーダル：つくるメモ🍚 (ピン留め一覧) -->
     <div v-if="showPinMemoModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-3 z-50">
       <div class="bg-white rounded-3xl max-w-lg w-full max-h-[85dvh] flex flex-col overflow-hidden shadow-xl my-auto">
         <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-orange-50/50 shrink-0">
           <h3 class="font-bold text-sm text-gray-800 flex items-center gap-1.5">
-            <span>つくるメモ 🥖</span>
+            <span>つくるメモ 🍚</span>
             <span class="text-xs text-gray-500 font-normal">({{ pinMemos.length }}件)</span>
           </h3>
           <button @click="showPinMemoModal = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold px-2">✕</button>
@@ -615,9 +615,9 @@
             </div>
           </div>
           <div v-else class="text-center py-12 text-gray-400 space-y-2">
-            <p class="text-2xl">🥖</p>
+            <p class="text-2xl">🍚</p>
             <p class="text-xs">つくるメモに保存されたレシピはありません。</p>
-            <p class="text-[11px] text-gray-400">レシピカードの「メモ🥖」ボタンを押すとここに登録されます。</p>
+            <p class="text-[11px] text-gray-400">レシピカードの「メモ🍚」ボタンを押すとここに登録されます。</p>
           </div>
         </div>
       </div>
