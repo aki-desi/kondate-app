@@ -68,7 +68,7 @@
       <span>⚠️ Firebase未設定のためローカル保存モードです。</span>
     </div>
 
-    <!-- メインナビゲーション (タブ) - 絵文字なし -->
+    <!-- メインナビゲーション (タブ) -->
     <nav class="flex rounded-2xl bg-white p-1.5 shadow-sm mb-6 border border-gray-100">
       <button @click="currentTab = 'search'" :class="['flex-1 py-2.5 rounded-xl font-bold text-sm transition', currentTab === 'search' ? 'bg-primary text-white shadow-sm' : 'text-gray-500 hover:text-gray-800']">
         さがす
@@ -89,11 +89,9 @@
         <button @click="searchMode = 'dinner'" :class="['flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold border transition', searchMode === 'dinner' ? 'bg-accentYellow text-white border-accentYellow shadow-sm' : 'bg-white text-gray-600 border-gray-200']">
           夕飯モード
         </button>
-        <!-- 簡単モード選択時は提案ボタンと同じオレンジ色 (bg-primary) -->
         <button @click="searchMode = 'lunch'" :class="['flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold border transition', searchMode === 'lunch' ? 'bg-primary text-white border-primary shadow-sm' : 'bg-white text-gray-600 border-gray-200']">
           簡単モード
         </button>
-        <!-- サブおかずタブ (絵文字なし) -->
         <button @click="searchMode = 'sub'" :class="['flex-1 py-2 rounded-xl text-xs sm:text-sm font-bold border transition', searchMode === 'sub' ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm' : 'bg-white text-gray-600 border-gray-200']">
           サブおかず
         </button>
@@ -235,15 +233,28 @@
             </div>
           </div>
 
-          <!-- サブおかず提案（夕飯モード時のみ） -->
-          <div v-if="searchMode === 'dinner' && searchFilter.proposeSub && item.subDish" @click.stop="openDetailModal(item.subDish)" class="mt-3 p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 flex justify-between items-center cursor-pointer hover:bg-emerald-100/60 transition">
-            <div>
-              <p class="text-xs font-bold text-emerald-800">🥗 合うサブおかず提案 <span class="text-[10px] font-normal text-emerald-600"> (タップで詳細)</span></p>
-              <p class="text-xs font-bold text-gray-800 mt-0.5">{{ item.subDish.name }} <span class="text-gray-500 font-normal">({{ item.subDish.ingredients ? item.subDish.ingredients.join(', ') : '' }})</span></p>
+          <!-- サブおかず複数提案（2〜3個） -->
+          <div v-if="searchMode === 'dinner' && searchFilter.proposeSub && item.subDishes && item.subDishes.length > 0" @click.stop class="mt-3 p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 space-y-2">
+            <div class="flex justify-between items-center">
+              <p class="text-xs font-bold text-emerald-800">🥗 合うサブおかず提案 ({{ item.subDishes.length }}件)</p>
+              <button @click="rerollSubDishes(item)" class="text-[11px] bg-white text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200 shadow-sm hover:bg-emerald-50 shrink-0 font-bold">
+                🔄 まとめてシャッフル
+              </button>
             </div>
-            <button @click.stop="rerollSubDish(item)" class="text-xs bg-white text-emerald-700 px-2 py-1 rounded-lg border border-emerald-200 shadow-sm hover:bg-emerald-50 shrink-0 ml-2">
-              🔄 シャッフル
-            </button>
+            <div class="space-y-1.5">
+              <div 
+                v-for="(sub, sIdx) in item.subDishes" 
+                :key="sub.id || sIdx" 
+                @click="openDetailModal(sub)"
+                class="p-2 bg-white rounded-lg border border-emerald-100 flex justify-between items-center cursor-pointer hover:border-emerald-300 transition"
+              >
+                <div>
+                  <p class="text-xs font-bold text-gray-800">{{ sub.name }}</p>
+                  <p class="text-[10px] text-gray-500">材料: {{ sub.ingredients ? sub.ingredients.join(', ') : '' }}</p>
+                </div>
+                <span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded">詳細 ></span>
+              </div>
+            </div>
           </div>
 
           <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
@@ -396,7 +407,7 @@
     <!-- ================= ③ 閲覧・一覧 ================= -->
     <main v-if="currentTab === 'list'" class="space-y-4">
       
-      <!-- 料理名キーワード検索バー (探す内検索から移動) -->
+      <!-- 料理名キーワード検索バー -->
       <section class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-2">
         <h2 class="font-bold text-xs text-gray-700">🔍 料理名からさがす</h2>
         <div class="relative">
@@ -405,7 +416,7 @@
         </div>
       </section>
 
-      <!-- フィルター機能 -->
+      <!-- フィルター機能 (メインおかず: 肉類絞り込み / サブおかず: ジャンル絞り込み) -->
       <div class="bg-white p-3 rounded-2xl shadow-sm border border-gray-100 flex flex-col gap-2 text-xs sm:flex-row">
         <select v-model="listFilterCategory" class="p-2 border border-gray-200 rounded-xl flex-1">
           <option value="">すべてのカテゴリ</option>
@@ -414,6 +425,7 @@
           <option value="ごはんもの">ごはんもの</option>
         </select>
 
+        <!-- メインおかず選択時: 肉類絞り込み -->
         <select v-if="listFilterCategory === 'メインおかず'" v-model="listFilterMeat" class="p-2 border border-gray-200 rounded-xl flex-1 bg-orange-50/50 border-orange-200 font-bold text-primary">
           <option value="">すべての肉類・メイン食材</option>
           <option value="豚肉">豚肉</option>
@@ -421,6 +433,15 @@
           <option value="鶏肉">鶏肉</option>
           <option value="ひき肉">ひき肉</option>
           <option value="なし">肉なし（魚・豆腐等）</option>
+        </select>
+
+        <!-- サブおかず選択時: ジャンル絞り込み -->
+        <select v-if="listFilterCategory === 'サブおかず'" v-model="listFilterSubGenre" class="p-2 border border-emerald-200 rounded-xl flex-1 bg-emerald-50/50 font-bold text-emerald-800">
+          <option value="">すべてのジャンル</option>
+          <option value="和風">和風</option>
+          <option value="洋風">洋風</option>
+          <option value="中華">中華</option>
+          <option value="その他">その他</option>
         </select>
       </div>
 
@@ -658,7 +679,6 @@
         const ingredientStates = ref({});
         const isEditingIngredients = ref(false);
 
-        // 絞り込みフィルター（デフォルトで全選択）
         const searchFilter = ref({
           maxDifficultyLevel: 2,
           genres: ['和風', '洋風', '中華', 'その他'],
@@ -696,8 +716,8 @@
         const isAnalyzing = ref(false);
         const listFilterCategory = ref('');
         const listFilterMeat = ref('');
+        const listFilterSubGenre = ref(''); // サブおかず用ジャンル絞り込み
 
-        // Firebase初期化 & リアルタイム同期 (レシピ＋食材リスト)
         const initFirebase = (configObj) => {
           try {
             const config = typeof configObj === 'string' ? JSON.parse(configObj) : configObj;
@@ -705,14 +725,12 @@
             db = firebase.firestore();
             isFirebaseConnected.value = true;
 
-            // レシピ同期
             db.collection('recipes').onSnapshot((snapshot) => {
               const items = [];
               snapshot.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
               recipes.value = items;
             });
 
-            // 食材マスターリスト同期
             db.collection('settings').doc('ingredients').onSnapshot((doc) => {
               if (doc.exists && doc.data().list) {
                 defaultIngredients.value = doc.data().list;
@@ -739,7 +757,6 @@
           }
         });
 
-        // 食材マスターリストの保存（Firebase / LocalStorage）
         const saveIngredientsList = async () => {
           if (isFirebaseConnected.value && db) {
             await db.collection('settings').doc('ingredients').set({ list: defaultIngredients.value });
@@ -761,23 +778,22 @@
           }
         };
 
-        // 食材タップ挙動: 1タップ＝ある食材 (have: オレンジ), 2タップ＝使いたい食材 (want: 緑), 3タップ＝指定なし (none: 白)
         const cycleIngredientState = (name) => {
           if (isEditingIngredients.value) return;
           const current = ingredientStates.value[name] || 'none';
           if (current === 'none') {
-            ingredientStates.value[name] = 'have'; // 1タップ目: ある食材
+            ingredientStates.value[name] = 'have';
           } else if (current === 'have') {
-            ingredientStates.value[name] = 'want'; // 2タップ目: 使いたい食材
+            ingredientStates.value[name] = 'want';
           } else {
-            ingredientStates.value[name] = 'none'; // 3タップ目: 指定なし
+            ingredientStates.value[name] = 'none';
           }
         };
 
         const getIngredientClass = (item) => {
           const state = ingredientStates.value[item.name] || 'none';
-          if (state === 'have') return 'chip-have text-primary';   // オレンジ
-          if (state === 'want') return 'chip-want text-secondary'; // 緑
+          if (state === 'have') return 'chip-have text-primary';
+          if (state === 'want') return 'chip-want text-secondary';
           
           let colorClass = 'text-tagOther';
           if (item.category === '肉類') colorClass = 'text-tagMeat';
@@ -808,7 +824,6 @@
           hasSearched.value = true;
           isRelaxedSearch.value = relaxed;
 
-          // want: 使いたい食材(緑), have: ある食材(オレンジ)
           const wantList = Object.keys(ingredientStates.value).filter(k => ingredientStates.value[k] === 'want');
           const haveList = Object.keys(ingredientStates.value).filter(k => ingredientStates.value[k] === 'have' || ingredientStates.value[k] === 'want');
 
@@ -825,14 +840,12 @@
               if (r.difficultyLevel && r.difficultyLevel > searchFilter.value.maxDifficultyLevel) return false;
               if (searchFilter.value.genres.length > 0 && !searchFilter.value.genres.includes(r.genre)) return false;
               
-              // 食べ方の判定 (別々OK, 一緒に)
               if (searchFilter.value.feature1) {
                 if (r.feature1 && r.feature1 !== searchFilter.value.feature1 && r.feature1 !== '別々' && r.feature1 !== '別々OK') return false;
               }
 
-              // 気温の判定 (夏, 冬, 指定なし)
               if (searchFilter.value.temp) {
-                const reqTemp = searchFilter.value.temp; // "夏" or "冬"
+                const reqTemp = searchFilter.value.temp;
                 const recTemp = r.temp || '指定なし';
                 if (recTemp !== '指定なし' && recTemp !== '普通') {
                   if (reqTemp === '夏' && recTemp !== '夏' && recTemp !== '暑い') return false;
@@ -859,7 +872,7 @@
           scored.sort((a, b) => b.matchScore - a.matchScore || a.missingCount - b.missingCount);
 
           if (searchMode.value === 'dinner' && searchFilter.value.proposeSub) {
-            scored.forEach(mainDish => { mainDish.subDish = findSubDish(mainDish); });
+            scored.forEach(mainDish => { mainDish.subDishes = findSubDishes(mainDish); });
           }
 
           searchResults.value = scored;
@@ -872,7 +885,8 @@
 
         const displayedSearchResults = computed(() => searchResults.value);
 
-        const findSubDish = (mainDish) => {
+        // サブおかずをランダムで2〜3個選出する関数
+        const findSubDishes = (mainDish) => {
           const mainIngs = mainDish.ingredients || [];
           const haveList = Object.keys(ingredientStates.value).filter(k => ingredientStates.value[k] === 'have' || ingredientStates.value[k] === 'want');
 
@@ -880,17 +894,27 @@
             r.category === 'サブおかず' &&
             !(r.ingredients || []).some(ing => mainIngs.includes(ing))
           );
-          if (subs.length === 0) return null;
+          if (subs.length === 0) return [];
 
-          const matchedSubs = subs.filter(r => (r.ingredients || []).some(ing => haveList.includes(ing)));
-          if (matchedSubs.length > 0) {
-            return matchedSubs[Math.floor(Math.random() * matchedSubs.length)];
-          }
+          // 手持ち食材を使っているサブおかずがあれば配列の前方にソート
+          subs.sort((a, b) => {
+            const matchA = (a.ingredients || []).filter(ing => haveList.includes(ing)).length;
+            const matchB = (b.ingredients || []).filter(ing => haveList.includes(ing)).length;
+            return matchB - matchA || (Math.random() - 0.5);
+          });
 
-          return subs[Math.floor(Math.random() * subs.length)];
+          // ランダム要素を入れてシャッフル
+          const shuffled = [...subs].sort(() => Math.random() - 0.5);
+
+          // 2個または3個をランダムに決定（手元に候補が少なければあるだけ返す）
+          const targetCount = Math.min(shuffled.length, Math.floor(Math.random() * 2) + 2); // 2 or 3
+          return shuffled.slice(0, targetCount);
         };
 
-        const rerollSubDish = (item) => { item.subDish = findSubDish(item); };
+        // サブおかずをまとめてシャッフル
+        const rerollSubDishes = (item) => { 
+          item.subDishes = findSubDishes(item); 
+        };
 
         const openDetailModal = (recipe) => {
           activeDetailModal.value = recipe;
@@ -906,7 +930,6 @@
           activeDetailModal.value = null;
         };
 
-        // 端末からの画像選択時に自動軽量圧縮（幅600px, 画質0.5のJPEG化）する処理
         const handleRecipeImageUpload = (e) => {
           const file = e.target.files[0];
           if (!file) return;
@@ -939,7 +962,7 @@
               canvas.height = height;
               const ctx = canvas.getContext('2d');
               ctx.drawImage(img, 0, 0, width, height);
-              const dataUrl = canvas.toDataURL('image/jpeg', 0.5); // 軽量圧縮
+              const dataUrl = canvas.toDataURL('image/jpeg', 0.5);
               callback(dataUrl);
             };
             img.src = evt.target.result;
@@ -947,7 +970,6 @@
           reader.readAsDataURL(file);
         };
 
-        // Gemini 3.6 Flash によるテキスト解析
         const extractByText = async () => {
           if (!aiTextRaw.value.trim()) return alert('レシピのテキストを入力してください');
           if (!apiKey.value) return alert('Gemini APIキーを設定してください');
@@ -990,7 +1012,6 @@ JSON構造:
           }
         };
 
-        // Gemini 3.6 Flash による画像解析
         const extractByImage = async (e) => {
           const file = e.target.files[0];
           if (!file) return;
@@ -1123,6 +1144,7 @@ JSON構造:
             list = list.filter(r => r.category === listFilterCategory.value);
           }
 
+          // メインおかず選択時の肉類絞り込み
           if (listFilterCategory.value === 'メインおかず' && listFilterMeat.value) {
             const targetMeat = listFilterMeat.value;
             const allMeats = ['豚肉', '牛肉', '鶏肉', 'ひき肉'];
@@ -1134,6 +1156,11 @@ JSON構造:
               }
               return ingsStr.includes(targetMeat);
             });
+          }
+
+          // サブおかず選択時のジャンル絞り込み
+          if (listFilterCategory.value === 'サブおかず' && listFilterSubGenre.value) {
+            list = list.filter(r => (r.genre || '和風') === listFilterSubGenre.value);
           }
 
           return list;
@@ -1154,9 +1181,9 @@ JSON構造:
           currentTab, searchMode, keywordQuery, showApiModal, showFirebaseModal, apiKey, firebaseConfigInput, isFirebaseConnected,
           defaultIngredients, ingredientStates, isEditingIngredients, searchFilter, searchResults, displayedSearchResults, hasSearched,
           isRelaxedSearch, newRecipe, activeDetailModal, modalTab, editingRecipe, aiTextRaw, isAnalyzing,
-          listFilterCategory, listFilterMeat, filteredList,
+          listFilterCategory, listFilterMeat, listFilterSubGenre, filteredList,
           moveIngredient, cycleIngredientState, getIngredientClass, promptAddIngredient, removeIngredient,
-          getDifficultyLabel, executeSearch, rerollSubDish, openDetailModal, startEditingActiveModal,
+          getDifficultyLabel, executeSearch, rerollSubDishes, openDetailModal, startEditingActiveModal,
           handleRecipeImageUpload, extractByText, extractByImage, saveRecipe, saveEditedRecipe, markAsMade, deleteRecipe,
           saveFirebaseConfig, saveApiKey
         };
