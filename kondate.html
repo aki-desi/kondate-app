@@ -53,14 +53,11 @@
       <h1 class="text-2xl font-bold text-primary flex items-center gap-2">
         <span>🍳</span> こんだてナビ
       </h1>
-      <div class="flex gap-2">
-        <button @click="showFirebaseModal = true" class="text-xs bg-white px-3 py-1.5 rounded-full border border-gray-300 shadow-sm hover:bg-gray-50 transition">
-          Firebase
-        </button>
-        <button @click="showApiModal = true" class="text-xs bg-white px-3 py-1.5 rounded-full border border-gray-300 shadow-sm hover:bg-gray-50 transition">
-          Gemini API
-        </button>
-      </div>
+      <!-- 「つくるメモ」ボタン (ヘッダー右上) -->
+      <button @click="showPinMemoModal = true" class="text-xs bg-white text-gray-800 font-bold px-3.5 py-1.5 rounded-full border border-gray-300 shadow-sm hover:bg-orange-50 transition flex items-center gap-1">
+        <span>つくるメモ 🥖</span>
+        <span v-if="pinMemos.length > 0" class="bg-primary text-white font-bold text-[10px] px-1.5 py-0.2 rounded-full">{{ pinMemos.length }}</span>
+      </button>
     </header>
 
     <!-- Firebase未接続警告バー -->
@@ -218,14 +215,14 @@
 
         <div v-for="item in displayedSearchResults" :key="item.id" @click="openDetailModal(item)" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative cursor-pointer hover:border-primary/50 transition">
           
-          <!-- マッチ条件タグ（右上） -->
+          <!-- マッチ条件タグ（右上） - 重複時◎優先、◎(青)/◯(紫)反転 -->
           <div class="absolute top-3.5 right-3.5 flex flex-wrap gap-1 justify-end max-w-[180px]">
-            <!-- 食材◎ (紫): 使いたい食材（緑）を含む場合（※食材◯と両立した場合は◎のみ表示） -->
-            <span v-if="item.hasWantIngredient" class="bg-purple-100 text-purple-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-purple-200">
+            <!-- 食材◎ (青): 条件満たす場合は優先表示 -->
+            <span v-if="item.isIngDoubleCircle" class="bg-blue-100 text-blue-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-blue-200">
               食材◎
             </span>
-            <!-- 食材◯ (青): 材料がすべて揃っていて、かつ使いたい食材を含まない場合（◎でない場合のみ表示） -->
-            <span v-else-if="item.isIngredientsComplete" class="bg-blue-100 text-blue-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-blue-200">
+            <!-- 食材◯ (紫): 食材◎が無い場合のみ表示 -->
+            <span v-else-if="item.isIngSingleCircle" class="bg-purple-100 text-purple-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-purple-200">
               食材◯
             </span>
             <!-- 気分◎ (オレンジ): ジャンルとボリュームが両方一致 -->
@@ -272,9 +269,16 @@
 
           <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
             <span class="text-gray-400">前回作成: {{ item.lastMadeDate || 'なし' }}</span>
-            <button @click.stop="markAsMade(item)" class="bg-secondary text-white font-bold px-3 py-1.5 rounded-xl hover:opacity-90 transition shadow-sm">
-              作った
-            </button>
+            <div class="flex gap-2">
+              <!-- メモ🥖 ボタン -->
+              <button @click.stop="togglePinMemo(item)" :class="['font-bold px-3 py-1.5 rounded-xl transition shadow-sm border', isPinned(item.id) ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">
+                {{ isPinned(item.id) ? 'メモ済🥖' : 'メモ🥖' }}
+              </button>
+              <!-- 作った✨ ボタン -->
+              <button @click.stop="markAsMade(item)" class="bg-secondary text-white font-bold px-3 py-1.5 rounded-xl hover:opacity-90 transition shadow-sm">
+                作った✨
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -395,7 +399,7 @@
           <div class="flex gap-2 mb-2">
             <input type="file" ref="recipeImageFile" accept="image/*" class="hidden" @change="handleRecipeImageUpload">
             <button @click="$refs.recipeImageFile.click()" class="bg-gray-100 border border-gray-200 text-gray-700 font-bold px-3 py-1.5 rounded-xl">
-              📁 端末から画像選択
+              📁 端末から画像選択 (自動軽量化)
             </button>
             <input v-model="newRecipe.image" placeholder="または画像のURLを入力..." class="flex-1 p-2 border border-gray-200 rounded-xl">
           </div>
@@ -493,6 +497,7 @@
           <!-- 料理画像＆タイトル -->
           <div class="flex gap-3 sm:gap-4 items-center">
             <img v-if="activeDetailModal.image" :src="activeDetailModal.image" class="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-2xl border border-gray-100">
+            <div v-else class="w-20 h-20 sm:w-24 sm:h-24 bg-gray-100 rounded-2xl flex items-center justify-center text-gray-400 text-3xl">🍳</div>
             <div class="flex-1">
               <h3 class="text-base sm:text-lg font-bold text-gray-800 leading-snug">{{ activeDetailModal.name }}</h3>
               <p class="text-gray-500 mt-1 text-[11px] sm:text-xs">
@@ -502,12 +507,12 @@
               </p>
               
               <a v-if="activeDetailModal.url" :href="activeDetailModal.url" target="_blank" class="inline-flex items-center gap-1 mt-1.5 text-primary font-bold bg-orange-50 px-2.5 py-0.5 rounded-lg border border-orange-200 text-[11px] hover:underline">
-                🔗 Webを開く
+                🔗 参考Webページを開く
               </a>
             </div>
           </div>
 
-          <!-- タブ切り替え（材料 / 作り方） -->
+          <!-- タブ切り替え（材料詳細 / 作り方 / 記録） -->
           <div class="flex border-b border-gray-200">
             <button @click="modalTab = 'ingredients'" :class="['flex-1 py-2 font-bold text-xs sm:text-sm border-b-2 transition', modalTab === 'ingredients' ? 'border-primary text-primary' : 'border-transparent text-gray-400']">
               材料詳細
@@ -515,9 +520,12 @@
             <button @click="modalTab = 'instructions'" :class="['flex-1 py-2 font-bold text-xs sm:text-sm border-b-2 transition', modalTab === 'instructions' ? 'border-primary text-primary' : 'border-transparent text-gray-400']">
               作り方
             </button>
+            <button @click="modalTab = 'history'" :class="['flex-1 py-2 font-bold text-xs sm:text-sm border-b-2 transition', modalTab === 'history' ? 'border-primary text-primary' : 'border-transparent text-gray-400']">
+              記録
+            </button>
           </div>
 
-          <!-- タブコンテンツ：材料 -->
+          <!-- タブ1: 材料 -->
           <div v-if="modalTab === 'ingredients'" class="space-y-3 pt-1">
             <div class="bg-gray-50 p-3 rounded-2xl border border-gray-100">
               <p class="font-bold text-gray-700 mb-1">メイン材料</p>
@@ -529,20 +537,88 @@
             </div>
           </div>
 
-          <!-- タブコンテンツ：作り方 -->
+          <!-- タブ2: 作り方 -->
           <div v-if="modalTab === 'instructions'" class="pt-1">
             <div class="bg-gray-50 p-3.5 rounded-2xl border border-gray-100 min-h-[180px]">
               <p class="font-bold text-gray-800 mb-1.5 text-xs">手順</p>
               <pre class="whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-xs">{{ activeDetailModal.instructions || '作り方の記述はありません。' }}</pre>
             </div>
           </div>
+
+          <!-- タブ3: 記録 (作成履歴の閲覧・追加・削除) -->
+          <div v-if="modalTab === 'history'" class="pt-1 space-y-3">
+            <div class="flex justify-between items-center bg-gray-50 p-3 rounded-2xl border border-gray-100">
+              <div>
+                <p class="font-bold text-gray-700">作成回数: <span class="text-primary font-bold text-sm">{{ activeDetailModal.makeCount || 0 }}回</span></p>
+                <p class="text-[11px] text-gray-400 mt-0.5">最終作成: {{ activeDetailModal.lastMadeDate || 'なし' }}</p>
+              </div>
+              <button @click="addCustomHistoryDate(activeDetailModal)" class="bg-primary/10 text-primary font-bold text-xs px-3 py-1.5 rounded-xl border border-primary/20 hover:bg-primary/20">
+                ＋ 日付を追加
+              </button>
+            </div>
+
+            <div class="bg-white p-3 rounded-2xl border border-gray-100 space-y-1.5 max-h-[160px] overflow-y-auto">
+              <p class="font-bold text-gray-700 text-[11px] mb-1">作成した日付の履歴</p>
+              <div v-if="activeDetailModal.makeHistory && activeDetailModal.makeHistory.length > 0" class="space-y-1">
+                <div v-for="(hDate, hIdx) in activeDetailModal.makeHistory" :key="hIdx" class="flex justify-between items-center py-1 px-2 bg-gray-50 rounded-lg text-xs">
+                  <span class="font-mono text-gray-700">{{ hDate }}</span>
+                  <button @click="deleteHistoryDate(activeDetailModal, hIdx)" class="text-red-400 font-bold hover:text-red-600 px-1">✕</button>
+                </div>
+              </div>
+              <p v-else class="text-gray-400 text-xs py-2 text-center">まだ記録がありません</p>
+            </div>
+          </div>
         </div>
 
         <div class="p-3.5 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center text-xs shrink-0">
           <span class="text-gray-400">作成: {{ activeDetailModal.makeCount || 0 }}回</span>
-          <button @click="markAsMade(activeDetailModal)" class="bg-secondary text-white font-bold px-4 py-2 rounded-xl shadow-sm text-xs hover:opacity-90">
-            作った✨
-          </button>
+          <div class="flex gap-2">
+            <!-- メモ🥖 ボタン -->
+            <button @click="togglePinMemo(activeDetailModal)" :class="['font-bold px-3 py-1.5 rounded-xl transition shadow-sm border', isPinned(activeDetailModal.id) ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">
+              {{ isPinned(activeDetailModal.id) ? 'メモ済🥖' : 'メモ🥖' }}
+            </button>
+            <!-- 作った✨ ボタン -->
+            <button @click="markAsMade(activeDetailModal)" class="bg-secondary text-white font-bold px-4 py-2 rounded-xl shadow-sm text-xs hover:opacity-90">
+              作った✨
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- モーダル：つくるメモ🥖 (ピン留め一覧) -->
+    <div v-if="showPinMemoModal" class="fixed inset-0 bg-black/50 flex items-center justify-center p-3 z-50">
+      <div class="bg-white rounded-3xl max-w-lg w-full max-h-[85dvh] flex flex-col overflow-hidden shadow-xl my-auto">
+        <div class="p-4 border-b border-gray-100 flex justify-between items-center bg-orange-50/50 shrink-0">
+          <h3 class="font-bold text-sm text-gray-800 flex items-center gap-1.5">
+            <span>つくるメモ 🥖</span>
+            <span class="text-xs text-gray-500 font-normal">({{ pinMemos.length }}件)</span>
+          </h3>
+          <button @click="showPinMemoModal = false" class="text-gray-400 hover:text-gray-600 text-xl font-bold px-2">✕</button>
+        </div>
+
+        <div class="p-4 overflow-y-auto space-y-3 flex-1 text-xs">
+          <div v-if="pinMemos.length > 0" class="space-y-3">
+            <div v-for="memo in pinMemos" :key="memo.id" @click="openDetailModalFromMemo(memo)" class="bg-white p-3.5 rounded-2xl border border-gray-200 flex justify-between items-center cursor-pointer hover:border-primary transition shadow-sm">
+              <div class="flex gap-3 items-center">
+                <img v-if="memo.image" :src="memo.image" class="w-12 h-12 object-cover rounded-xl border border-gray-100 shrink-0">
+                <div v-else class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-lg shrink-0">🍳</div>
+                <div>
+                  <span class="bg-gray-100 text-gray-600 text-[10px] px-1.5 py-0.5 rounded font-bold">{{ memo.category }}</span>
+                  <h4 class="font-bold text-sm text-gray-800 mt-0.5">{{ memo.name }}</h4>
+                  <p class="text-[11px] text-gray-500 line-clamp-1">材料: {{ memo.ingredients ? memo.ingredients.join(', ') : '' }}</p>
+                </div>
+              </div>
+              <button @click.stop="togglePinMemo(memo)" class="text-xs bg-red-50 text-red-600 border border-red-200 font-bold px-2.5 py-1 rounded-xl hover:bg-red-100 shrink-0 ml-2">
+                解除
+              </button>
+            </div>
+          </div>
+          <div v-else class="text-center py-12 text-gray-400 space-y-2">
+            <p class="text-2xl">🥖</p>
+            <p class="text-xs">つくるメモに保存されたレシピはありません。</p>
+            <p class="text-[11px] text-gray-400">レシピカードの「メモ🥖」ボタンを押すとここに登録されます。</p>
+          </div>
         </div>
       </div>
     </div>
@@ -662,30 +738,6 @@
       </div>
     </div>
 
-    <!-- Firebase Key 設定モーダル -->
-    <div v-if="showFirebaseModal" class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div class="bg-white p-5 rounded-2xl max-w-sm w-full space-y-3 text-xs">
-        <h3 class="font-bold text-sm text-gray-800">Firebase</h3>
-        <textarea v-model="firebaseConfigInput" rows="6" class="w-full p-2 border border-gray-200 rounded-xl font-mono text-[10px]"></textarea>
-        <div class="flex justify-end gap-2 pt-2">
-          <button @click="showFirebaseModal = false" class="px-3 py-1.5 text-gray-500">キャンセル</button>
-          <button @click="saveFirebaseConfig" class="px-4 py-1.5 bg-primary text-white rounded-xl font-bold">保存</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Gemini API Key モーダル -->
-    <div v-if="showApiModal" class="fixed inset-0 bg-black/40 flex items-center justify-center p-4 z-50">
-      <div class="bg-white p-5 rounded-2xl max-w-sm w-full space-y-3 text-xs">
-        <h3 class="font-bold text-sm text-gray-800">Gemini</h3>
-        <input v-model="apiKey" class="w-full p-2 border border-gray-200 rounded-xl">
-        <div class="flex justify-end gap-2 pt-2">
-          <button @click="showApiModal = false" class="px-3 py-1.5 text-gray-500">キャンセル</button>
-          <button @click="saveApiKey" class="px-4 py-1.5 bg-primary text-white rounded-xl font-bold">保存</button>
-        </div>
-      </div>
-    </div>
-
   </div>
 
   <script>
@@ -696,8 +748,7 @@
         const currentTab = ref('search');
         const searchMode = ref('dinner');
         const keywordQuery = ref('');
-        const showApiModal = ref(false);
-        const showFirebaseModal = ref(false);
+        const showPinMemoModal = ref(false);
         const apiKey = ref('');
         const firebaseConfigInput = ref('');
         const isFirebaseConnected = ref(false);
@@ -735,6 +786,7 @@
         });
 
         const recipes = ref([]);
+        const pinMemos = ref([]); // つくるメモ（ピン留めリスト）
         const searchResults = ref([]);
         const hasSearched = ref(false);
         const isRelaxedSearch = ref(false);
@@ -771,16 +823,25 @@
             db = firebase.firestore();
             isFirebaseConnected.value = true;
 
+            // レシピ同期
             db.collection('recipes').onSnapshot((snapshot) => {
               const items = [];
               snapshot.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
               recipes.value = items;
             });
 
+            // 食材マスターリスト同期
             db.collection('settings').doc('ingredients').onSnapshot((doc) => {
               if (doc.exists && doc.data().list) {
                 defaultIngredients.value = doc.data().list;
               }
+            });
+
+            // つくるメモ（ピン留め）同期
+            db.collection('pinMemos').onSnapshot((snapshot) => {
+              const items = [];
+              snapshot.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
+              pinMemos.value = items;
             });
           } catch (e) {
             console.error('Firebase接続エラー:', e);
@@ -789,16 +850,11 @@
         };
 
         onMounted(() => {
-          const savedKey = localStorage.getItem('gemini_api_key');
-          apiKey.value = savedKey || initialGeminiApiKey;
-          if (!savedKey) localStorage.setItem('gemini_api_key', initialGeminiApiKey);
-
+          apiKey.value = localStorage.getItem('gemini_api_key') || initialGeminiApiKey;
           const savedFbConfig = localStorage.getItem('firebase_config');
           if (savedFbConfig) {
-            firebaseConfigInput.value = savedFbConfig;
             initFirebase(savedFbConfig);
           } else {
-            firebaseConfigInput.value = JSON.stringify(initialFirebaseConfig, null, 2);
             initFirebase(initialFirebaseConfig);
           }
         });
@@ -866,11 +922,54 @@
           return map[lvl] || 'ふつう';
         };
 
+        // ピン留め（つくるメモ🥖）判定＆トグル保存
+        const isPinned = (recipeId) => {
+          return pinMemos.value.some(m => String(m.id) === String(recipeId));
+        };
+
+        const togglePinMemo = async (recipe) => {
+          const targetId = String(recipe.id);
+          if (isPinned(targetId)) {
+            // 削除
+            if (isFirebaseConnected.value && db) {
+              await db.collection('pinMemos').doc(targetId).delete();
+            } else {
+              pinMemos.value = pinMemos.value.filter(m => String(m.id) !== targetId);
+              localStorage.setItem('my_pin_memos', JSON.stringify(pinMemos.value));
+            }
+          } else {
+            // 追加
+            const memoData = {
+              id: targetId,
+              name: recipe.name,
+              category: recipe.category,
+              image: recipe.image || '',
+              ingredients: recipe.ingredients || [],
+              pinnedAt: new Date().toISOString()
+            };
+            if (isFirebaseConnected.value && db) {
+              await db.collection('pinMemos').doc(targetId).set(memoData);
+            } else {
+              pinMemos.value.push(memoData);
+              localStorage.setItem('my_pin_memos', JSON.stringify(pinMemos.value));
+            }
+          }
+        };
+
+        const openDetailModalFromMemo = (memo) => {
+          const fullRecipe = recipes.value.find(r => String(r.id) === String(memo.id));
+          if (fullRecipe) {
+            openDetailModal(fullRecipe);
+          } else {
+            openDetailModal(memo);
+          }
+          showPinMemoModal.value = false;
+        };
+
         const executeSearch = (relaxed = false) => {
           hasSearched.value = true;
           isRelaxedSearch.value = relaxed;
 
-          // wantList: 使いたい食材(緑), haveList: 手持ち食材(ある食材＋使いたい食材)
           const wantList = Object.keys(ingredientStates.value).filter(k => ingredientStates.value[k] === 'want');
           const haveList = Object.keys(ingredientStates.value).filter(k => ingredientStates.value[k] === 'have' || ingredientStates.value[k] === 'want');
 
@@ -908,27 +1007,47 @@
             let score = 50;
             const ingredientsList = r.ingredients || [];
             
-            // 1. 食材◎ (紫): 使いたい食材（緑）が含まれているか
-            const hasWantIngredient = ingredientsList.some(i => wantList.includes(i));
-            if (hasWantIngredient) score += 30;
+            // 判定1: 使いたい食材（緑）をすべて含むか
+            const containsAllWant = wantList.length > 0 && wantList.every(w => ingredientsList.includes(w));
+            // 判定2: 手持ち食材（ある＋使いたい）のみで作れるか
+            const canMakeWithHaveOnly = ingredientsList.length > 0 && ingredientsList.every(i => haveList.includes(i));
+            // 判定3: 使いたい食材（緑）を一部含むか
+            const containsSomeWant = wantList.length > 0 && ingredientsList.some(i => wantList.includes(i));
 
-            // 2. 食材◯ (青): 手持ち食材で材料がすべて揃っているか
-            const missingCount = ingredientsList.filter(i => !haveList.includes(i)).length;
-            const isIngredientsComplete = ingredientsList.length > 0 && missingCount === 0;
-            if (isIngredientsComplete) score += 20;
+            // 食材◎ 条件:
+            // (1) 使いたい食材がある時 ➔ 使いたい食材をすべて含み、かつある食材のみで作れる
+            // (2) 使いたい食材が無い時 ➔ ある食材のみで作れる
+            let isIngDoubleCircle = false;
+            if (wantList.length > 0) {
+              isIngDoubleCircle = containsAllWant && canMakeWithHaveOnly;
+            } else {
+              isIngDoubleCircle = canMakeWithHaveOnly;
+            }
 
-            // 3. 気分◎ (オレンジ): ジャンルとボリュームが両方一致しているか
+            // 食材◯ 条件 (◎に該当しない場合のみ):
+            // 使いたい食材を一部含む OR ある食材のみで作れる
+            let isIngSingleCircle = false;
+            if (!isIngDoubleCircle) {
+              isIngSingleCircle = containsSomeWant || canMakeWithHaveOnly;
+            }
+
+            if (isIngDoubleCircle) score += 35;
+            else if (isIngSingleCircle) score += 20;
+
+            // 気分◎ 条件: ジャンルとボリュームが両方一致
             const genreMatch = searchFilter.value.genres.length > 0 && searchFilter.value.genres.includes(r.genre);
             const volumeMatch = searchFilter.value.volumes.length > 0 && searchFilter.value.volumes.includes(r.volume);
             const isMoodMatched = genreMatch && volumeMatch;
             if (isMoodMatched) score += 20;
 
+            const missingCount = ingredientsList.filter(i => !haveList.includes(i)).length;
+
             return { 
               ...r, 
               matchScore: score, 
               missingCount,
-              hasWantIngredient,
-              isIngredientsComplete,
+              isIngDoubleCircle,
+              isIngSingleCircle,
               isMoodMatched
             };
           });
@@ -1146,7 +1265,8 @@ JSON構造:
             ...newRecipe.value,
             ingredients,
             makeCount: 0,
-            lastMadeDate: ''
+            lastMadeDate: '',
+            makeHistory: []
           };
 
           if (isFirebaseConnected.value && db) {
@@ -1178,21 +1298,77 @@ JSON構造:
           alert('修正を保存しました');
         };
 
+        // 「作った✨」の記録処理（日付履歴を保持）
         const markAsMade = async (item) => {
           const newCount = (item.makeCount || 0) + 1;
-          const newDate = new Date().toISOString().split('T')[0];
+          const today = new Date().toISOString().split('T')[0];
+          const history = Array.isArray(item.makeHistory) ? [...item.makeHistory] : [];
+          history.unshift(today);
+
+          const updatePayload = { 
+            makeCount: newCount, 
+            lastMadeDate: today,
+            makeHistory: history
+          };
 
           if (isFirebaseConnected.value && db) {
-            await db.collection('recipes').doc(String(item.id)).update({ makeCount: newCount, lastMadeDate: newDate });
+            await db.collection('recipes').doc(String(item.id)).update(updatePayload);
           } else {
             const target = recipes.value.find(r => r.id === item.id);
             if (target) {
-              target.makeCount = newCount;
-              target.lastMadeDate = newDate;
+              Object.assign(target, updatePayload);
               localStorage.setItem('my_recipes', JSON.stringify(recipes.value));
             }
           }
-          alert(`「${item.name}」を作った日に記録しました！`);
+          if (activeDetailModal.value && String(activeDetailModal.value.id) === String(item.id)) {
+            Object.assign(activeDetailModal.value, updatePayload);
+          }
+          alert(`「${item.name}」を作った日に記録しました！ (${today})`);
+        };
+
+        // ポップアップの「記録」タブ：任意の日付を追加
+        const addCustomHistoryDate = async (item) => {
+          const inputDate = prompt('作成した日付を入力してください (例: 2026-10-02):', new Date().toISOString().split('T')[0]);
+          if (!inputDate || !inputDate.trim()) return;
+
+          const history = Array.isArray(item.makeHistory) ? [...item.makeHistory] : [];
+          history.unshift(inputDate.trim());
+          history.sort().reverse();
+
+          const updatePayload = {
+            makeCount: history.length,
+            lastMadeDate: history[0] || '',
+            makeHistory: history
+          };
+
+          if (isFirebaseConnected.value && db) {
+            await db.collection('recipes').doc(String(item.id)).update(updatePayload);
+          } else {
+            const target = recipes.value.find(r => r.id === item.id);
+            if (target) Object.assign(target, updatePayload);
+          }
+          Object.assign(activeDetailModal.value, updatePayload);
+        };
+
+        // ポップアップの「記録」タブ：日付履歴の削除
+        const deleteHistoryDate = async (item, index) => {
+          if (!confirm('この作成日付を削除しますか？')) return;
+          const history = [...item.makeHistory];
+          history.splice(index, 1);
+
+          const updatePayload = {
+            makeCount: history.length,
+            lastMadeDate: history[0] || '',
+            makeHistory: history
+          };
+
+          if (isFirebaseConnected.value && db) {
+            await db.collection('recipes').doc(String(item.id)).update(updatePayload);
+          } else {
+            const target = recipes.value.find(r => r.id === item.id);
+            if (target) Object.assign(target, updatePayload);
+          }
+          Object.assign(activeDetailModal.value, updatePayload);
         };
 
         const deleteRecipe = async (id) => {
@@ -1237,26 +1413,15 @@ JSON構造:
           return list;
         });
 
-        const saveFirebaseConfig = () => {
-          localStorage.setItem('firebase_config', firebaseConfigInput.value);
-          initFirebase(firebaseConfigInput.value);
-          showFirebaseModal.value = false;
-        };
-
-        const saveApiKey = () => {
-          localStorage.setItem('gemini_api_key', apiKey.value);
-          showApiModal.value = false;
-        };
-
         return {
-          currentTab, searchMode, keywordQuery, showApiModal, showFirebaseModal, apiKey, firebaseConfigInput, isFirebaseConnected,
+          currentTab, searchMode, keywordQuery, showPinMemoModal, apiKey, firebaseConfigInput, isFirebaseConnected,
           defaultIngredients, ingredientStates, isEditingIngredients, searchFilter, searchResults, displayedSearchResults, hasSearched,
           isRelaxedSearch, newRecipe, activeDetailModal, modalTab, editingRecipe, aiTextRaw, isAnalyzing,
-          listFilterCategory, listFilterMeat, listFilterSubGenre, filteredList,
+          listFilterCategory, listFilterMeat, listFilterSubGenre, filteredList, pinMemos,
           moveIngredient, cycleIngredientState, getIngredientClass, promptAddIngredient, removeIngredient,
           getDifficultyLabel, executeSearch, rerollSubDishes, openDetailModal, startEditingActiveModal,
           handleRecipeImageUpload, handleEditRecipeImageUpload, extractByText, extractByImage, saveRecipe, saveEditedRecipe, markAsMade, deleteRecipe,
-          saveFirebaseConfig, saveApiKey
+          isPinned, togglePinMemo, openDetailModalFromMemo, addCustomHistoryDate, deleteHistoryDate
         };
       }
     }).mount('#app');
