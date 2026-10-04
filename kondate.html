@@ -201,9 +201,9 @@
         </div>
       </section>
 
-      <!-- 検索実行ボタン -->
+      <!-- 検索実行ボタン（① 修正） -->
       <button @click="executeSearch(false)" class="w-full py-3.5 bg-primary text-white font-bold text-base rounded-2xl shadow-md hover:opacity-95 transition">
-        ✨ 献立をおすすめ順に提案！
+        ✨ おすすめ順に提案！
       </button>
 
       <!-- 検索結果エリア -->
@@ -215,17 +215,14 @@
 
         <div v-for="item in displayedSearchResults" :key="item.id" @click="openDetailModal(item)" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative cursor-pointer hover:border-primary/50 transition">
           
-          <!-- マッチ条件タグ（右上） - 重複時◎優先、◎(青)/◯(紫)反転 -->
+          <!-- マッチ条件タグ（右上） -->
           <div class="absolute top-3.5 right-3.5 flex flex-wrap gap-1 justify-end max-w-[180px]">
-            <!-- 食材◎ (青): 条件満たす場合は優先表示 -->
             <span v-if="item.isIngDoubleCircle" class="bg-blue-100 text-blue-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-blue-200">
               食材◎
             </span>
-            <!-- 食材◯ (紫): 食材◎が無い場合のみ表示 -->
             <span v-else-if="item.isIngSingleCircle" class="bg-purple-100 text-purple-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-purple-200">
               食材◯
             </span>
-            <!-- 気分◎ (オレンジ): ジャンルとボリュームが両方一致 -->
             <span v-if="item.isMoodMatched" class="bg-orange-100 text-orange-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-orange-200">
               気分◎
             </span>
@@ -270,9 +267,9 @@
           <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
             <span class="text-gray-400">前回作成: {{ item.lastMadeDate || 'なし' }}</span>
             <div class="flex gap-2">
-              <!-- メモ🍚 ボタン -->
+              <!-- メモ🥖 ボタン -->
               <button @click.stop="togglePinMemo(item)" :class="['font-bold px-3 py-1.5 rounded-xl transition shadow-sm border', isPinned(item.id) ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">
-                {{ isPinned(item.id) ? 'メモ済🍚' : 'メモ🍚' }}
+                {{ isPinned(item.id) ? 'メモ済' : 'メモ🍚' }}
               </button>
               <!-- 作った✨ ボタン -->
               <button @click.stop="markAsMade(item)" class="bg-secondary text-white font-bold px-3 py-1.5 rounded-xl hover:opacity-90 transition shadow-sm">
@@ -296,7 +293,7 @@
       
       <!-- 料理名キーワード検索バー -->
       <section class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-2">
-        <h2 class="font-bold text-xs text-gray-700">🔍 さがす</h2>
+        <h2 class="font-bold text-xs text-gray-700">🔍 料理名からさがす</h2>
         <div class="relative">
           <input v-model="keywordQuery" placeholder="料理名を入力... (例: ハンバーグ、生姜焼き)" class="w-full p-2.5 pr-10 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-primary">
           <span v-if="keywordQuery" @click="keywordQuery = ''" class="absolute right-3 top-2 text-gray-400 hover:text-gray-600 font-bold cursor-pointer text-sm">✕</span>
@@ -312,14 +309,14 @@
           <option value="ごはんもの">ごはんもの</option>
         </select>
 
-        <!-- メインおかず選択時: 肉類絞り込み -->
+        <!-- メインおかず選択時: 肉類絞り込み（③ 修正） -->
         <select v-if="listFilterCategory === 'メインおかず'" v-model="listFilterMeat" class="p-2 border border-gray-200 rounded-xl flex-1 bg-orange-50/50 border-orange-200 font-bold text-primary">
           <option value="">すべての肉類・メイン食材</option>
           <option value="豚肉">豚肉</option>
-          <option value="牛肉">牛肉</option>
-          <option value="鶏肉">鶏肉</option>
-          <option value="ひき肉">ひき肉</option>
-          <option value="なし">肉なし（魚・豆腐等）</option>
+          <option value="豚ひき肉">豚ひき肉</option>
+          <option value="鶏むね肉">鶏むね肉</option>
+          <option value="鶏もも肉">鶏もも肉</option>
+          <option value="その他">その他</option>
         </select>
 
         <!-- サブおかず選択時: ジャンル絞り込み -->
@@ -358,13 +355,13 @@
 
       <!-- Gemini AI自動入力エリア -->
       <div class="p-3 bg-orange-50 rounded-xl border border-orange-200 space-y-2">
-        <p class="font-bold text-primary flex items-center gap-1">✨ AI自動入力 (Gemini-3.6-flash)</p>
+        <p class="font-bold text-primary flex items-center gap-1">✨ AI自動入力</p>
         
         <!-- テキスト直接貼り付け解析欄 -->
         <div class="space-y-1">
-          <textarea v-model="aiTextRaw" rows="3" placeholder="テキストを貼り付け..." class="w-full p-2 border border-gray-200 rounded-xl bg-white text-xs"></textarea>
+          <textarea v-model="aiTextRaw" rows="3" placeholder="レシピ文や材料・作り方テキストを貼り付け..." class="w-full p-2 border border-gray-200 rounded-xl bg-white text-xs"></textarea>
           <button @click="extractByText" :disabled="isAnalyzing" class="w-full py-2 bg-primary text-white font-bold rounded-xl disabled:opacity-50">
-            {{ isAnalyzing ? '解析中...' : '📝 テキストからAI解析' }}
+            {{ isAnalyzing ? '解析中...' : 'テキストからAI解析' }}
           </button>
         </div>
 
@@ -372,7 +369,7 @@
         <div class="flex items-center gap-2 pt-1 border-t border-orange-100">
           <input type="file" ref="aiImageInput" accept="image/*" class="hidden" @change="extractByImage">
           <button @click="$refs.aiImageInput.click()" :disabled="isAnalyzing" class="w-full py-2 bg-white border border-gray-300 font-bold text-gray-700 rounded-xl hover:bg-gray-50">
-            📷 画像から読み込み
+            画像から読み込み
           </button>
         </div>
       </div>
@@ -399,7 +396,7 @@
           <div class="flex gap-2 mb-2">
             <input type="file" ref="recipeImageFile" accept="image/*" class="hidden" @change="handleRecipeImageUpload">
             <button @click="$refs.recipeImageFile.click()" class="bg-gray-100 border border-gray-200 text-gray-700 font-bold px-3 py-1.5 rounded-xl">
-              📁 端末から画像選択
+              端末から画像選択
             </button>
             <input v-model="newRecipe.image" placeholder="または画像のURLを入力..." class="flex-1 p-2 border border-gray-200 rounded-xl">
           </div>
@@ -488,7 +485,7 @@
         <div class="p-3.5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
           <span class="bg-primary/10 text-primary font-bold text-xs px-3 py-1 rounded-full">{{ activeDetailModal.category }}</span>
           <div class="flex gap-2">
-            <button @click="startEditingActiveModal" class="text-xs bg-white border border-gray-300 font-bold px-3 py-1 rounded-xl hover:bg-gray-50">編集</button>
+            <button @click="startEditingActiveModal" class="text-xs bg-white border border-gray-300 font-bold px-3 py-1 rounded-xl hover:bg-gray-50">✏️ 編集</button>
             <button @click="activeDetailModal = null" class="text-gray-400 hover:text-gray-600 text-xl font-bold px-2">✕</button>
           </div>
         </div>
@@ -507,7 +504,7 @@
               </p>
               
               <a v-if="activeDetailModal.url" :href="activeDetailModal.url" target="_blank" class="inline-flex items-center gap-1 mt-1.5 text-primary font-bold bg-orange-50 px-2.5 py-0.5 rounded-lg border border-orange-200 text-[11px] hover:underline">
-                🔗 Webを開く
+                🔗 リンクを開く
               </a>
             </div>
           </div>
@@ -533,7 +530,7 @@
             </div>
             <div class="bg-amber-50/50 p-3.5 rounded-2xl border border-amber-100 min-h-[140px]">
               <p class="font-bold text-gray-800 mb-1.5 text-xs">材料と分量</p>
-              <pre class="whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-xs">{{ activeDetailModal.ingredientsDetail || '未入力' }}</pre>
+              <pre class="whitespace-pre-wrap font-sans text-gray-700 leading-relaxed text-xs">{{ activeDetailModal.ingredientsDetail || '' }}</pre>
             </div>
           </div>
 
@@ -573,9 +570,9 @@
         <div class="p-3.5 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center text-xs shrink-0">
           <span class="text-gray-400">作成: {{ activeDetailModal.makeCount || 0 }}回</span>
           <div class="flex gap-2">
-            <!-- メモ🍚 ボタン -->
+            <!-- メモ🥖 ボタン -->
             <button @click="togglePinMemo(activeDetailModal)" :class="['font-bold px-3 py-1.5 rounded-xl transition shadow-sm border', isPinned(activeDetailModal.id) ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">
-              {{ isPinned(activeDetailModal.id) ? 'メモ済🍚' : 'メモ🍚' }}
+              {{ isPinned(activeDetailModal.id) ? 'メモ済🥖' : 'メモ🥖' }}
             </button>
             <!-- 作った✨ ボタン -->
             <button @click="markAsMade(activeDetailModal)" class="bg-secondary text-white font-bold px-4 py-2 rounded-xl shadow-sm text-xs hover:opacity-90">
@@ -648,7 +645,7 @@
           <div class="flex gap-2 mb-2">
             <input type="file" ref="editRecipeImageFile" accept="image/*" class="hidden" @change="handleEditRecipeImageUpload">
             <button @click="$refs.editRecipeImageFile.click()" class="bg-gray-100 border border-gray-200 text-gray-700 font-bold px-3 py-1.5 rounded-xl">
-              📁 端末から画像選択
+              端末から画像選択
             </button>
             <input v-model="editingRecipe.image" placeholder="または画像のURLを入力..." class="flex-1 p-2 border border-gray-200 rounded-xl">
           </div>
@@ -966,6 +963,7 @@
           showPinMemoModal.value = false;
         };
 
+        // ② 検索処理の調整（ある・使いたい食材のみで作れるレシピに絞り込み、緩め時スコアリング）
         const executeSearch = (relaxed = false) => {
           hasSearched.value = true;
           isRelaxedSearch.value = relaxed;
@@ -999,6 +997,13 @@
                 }
               }
 
+              // 夕飯・簡単モード（およびサブ含む全モード）で「ある食材」「使いたい食材」のみを材料に含むメニューだけを抽出
+              const ingredientsList = r.ingredients || [];
+              if (ingredientsList.length > 0) {
+                const canMake = ingredientsList.every(i => haveList.includes(i));
+                if (!canMake) return false;
+              }
+
               return true;
             });
           }
@@ -1007,16 +1012,10 @@
             let score = 50;
             const ingredientsList = r.ingredients || [];
             
-            // 判定1: 使いたい食材（緑）をすべて含むか
             const containsAllWant = wantList.length > 0 && wantList.every(w => ingredientsList.includes(w));
-            // 判定2: 手持ち食材（ある＋使いたい）のみで作れるか
             const canMakeWithHaveOnly = ingredientsList.length > 0 && ingredientsList.every(i => haveList.includes(i));
-            // 判定3: 使いたい食材（緑）を一部含むか
             const containsSomeWant = wantList.length > 0 && ingredientsList.some(i => wantList.includes(i));
 
-            // 食材◎ 条件:
-            // (1) 使いたい食材がある時 ➔ 使いたい食材をすべて含み、かつある食材のみで作れる
-            // (2) 使いたい食材が無い時 ➔ ある食材のみで作れる
             let isIngDoubleCircle = false;
             if (wantList.length > 0) {
               isIngDoubleCircle = containsAllWant && canMakeWithHaveOnly;
@@ -1024,8 +1023,6 @@
               isIngDoubleCircle = canMakeWithHaveOnly;
             }
 
-            // 食材◯ 条件 (◎に該当しない場合のみ):
-            // 使いたい食材を一部含む OR ある食材のみで作れる
             let isIngSingleCircle = false;
             if (!isIngDoubleCircle) {
               isIngSingleCircle = containsSomeWant || canMakeWithHaveOnly;
@@ -1034,7 +1031,6 @@
             if (isIngDoubleCircle) score += 35;
             else if (isIngSingleCircle) score += 20;
 
-            // 気分◎ 条件: ジャンルとボリュームが両方一致
             const genreMatch = searchFilter.value.genres.length > 0 && searchFilter.value.genres.includes(r.genre);
             const volumeMatch = searchFilter.value.volumes.length > 0 && searchFilter.value.volumes.includes(r.volume);
             const isMoodMatched = genreMatch && volumeMatch;
@@ -1052,7 +1048,12 @@
             };
           });
 
-          scored.sort((a, b) => b.matchScore - a.matchScore || a.missingCount - b.missingCount);
+          // 再検索（緩め条件）時は足りない材料の少なさを第一優先にしつつ使いたい食材の一致（スコア）で並び替え
+          if (relaxed) {
+            scored.sort((a, b) => a.missingCount - b.missingCount || b.matchScore - a.matchScore);
+          } else {
+            scored.sort((a, b) => b.matchScore - a.matchScore || a.missingCount - b.missingCount);
+          }
 
           if (searchMode.value === 'dinner' && searchFilter.value.proposeSub) {
             scored.forEach(mainDish => { mainDish.subDishes = findSubDishes(mainDish); });
@@ -1298,7 +1299,7 @@ JSON構造:
           alert('修正を保存しました');
         };
 
-        // 「作った✨」の記録処理（日付履歴を保持）
+        // 「作った✨」の記録処理
         const markAsMade = async (item) => {
           const newCount = (item.makeCount || 0) + 1;
           const today = new Date().toISOString().split('T')[0];
@@ -1326,7 +1327,7 @@ JSON構造:
           alert(`「${item.name}」を作った日に記録しました！ (${today})`);
         };
 
-        // ポップアップの「記録」タブ：任意の日付を追加
+        // 任意の日付を追加
         const addCustomHistoryDate = async (item) => {
           const inputDate = prompt('作成した日付を入力してください (例: 2026-10-02):', new Date().toISOString().split('T')[0]);
           if (!inputDate || !inputDate.trim()) return;
@@ -1350,7 +1351,7 @@ JSON構造:
           Object.assign(activeDetailModal.value, updatePayload);
         };
 
-        // ポップアップの「記録」タブ：日付履歴の削除
+        // 日付履歴の削除
         const deleteHistoryDate = async (item, index) => {
           if (!confirm('この作成日付を削除しますか？')) return;
           const history = [...item.makeHistory];
@@ -1381,6 +1382,7 @@ JSON構造:
           }
         };
 
+        // ③ 一覧のメインおかず肉類絞り込みロジック修正
         const filteredList = computed(() => {
           let list = recipes.value;
           
@@ -1395,12 +1397,12 @@ JSON構造:
 
           if (listFilterCategory.value === 'メインおかず' && listFilterMeat.value) {
             const targetMeat = listFilterMeat.value;
-            const allMeats = ['豚肉', '牛肉', '鶏肉', 'ひき肉'];
+            const definedMeats = ['豚肉', '豚ひき肉', '鶏むね肉', '鶏もも肉'];
 
             list = list.filter(r => {
               const ingsStr = (r.ingredients ? r.ingredients.join(' ') : '') + (r.ingredientsDetail || '');
-              if (targetMeat === 'なし') {
-                return !allMeats.some(m => ingsStr.includes(m));
+              if (targetMeat === 'その他') {
+                return !definedMeats.some(m => ingsStr.includes(m));
               }
               return ingsStr.includes(targetMeat);
             });
