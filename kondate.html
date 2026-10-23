@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ごはんナビ</title>
+  <link rel="apple-touch-icon" href="/kondate-app/apple-touch-icon.png?v=2">
   <!-- Vue.js 3 CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <!-- Tailwind CSS CDN -->
@@ -624,7 +625,7 @@
           <div v-else class="text-center py-12 text-gray-400 space-y-2">
             <p class="text-2xl">🍚</p>
             <p class="text-xs">つくるメモに保存されたレシピはありません。</p>
-            <p class="text-[11px] text-gray-400">レシピカードの「メモ🍚」ボタンを押すとここに登録されます。</p>
+            <p class="text-[11px] text-gray-400">レシピカードのなめらかな「メモ🍚」ボタンを押すとここに登録されます。</p>
           </div>
         </div>
       </div>
@@ -1015,6 +1016,12 @@
 
               return true;
             });
+          } else {
+            // 💡 条件を緩めて再検索時：むずかしさの条件のみ維持する
+            candidates = candidates.filter(r => {
+              if (r.difficultyLevel && r.difficultyLevel > searchFilter.value.maxDifficultyLevel) return false;
+              return true;
+            });
           }
 
           const scored = candidates.map(r => {
@@ -1057,17 +1064,20 @@
             };
           });
 
+          let finalScored = scored;
           if (relaxed) {
-            scored.sort((a, b) => a.missingCount - b.missingCount || b.matchScore - a.matchScore);
+            // 💡 緩和検索時は不足材料が2個までのものに限定し、不足数が少ない順 → スコア順に並び替え
+            finalScored = scored.filter(r => r.missingCount <= 2);
+            finalScored.sort((a, b) => a.missingCount - b.missingCount || b.matchScore - a.matchScore);
           } else {
-            scored.sort((a, b) => b.matchScore - a.matchScore || a.missingCount - b.missingCount);
+            finalScored.sort((a, b) => b.matchScore - a.matchScore || a.missingCount - b.missingCount);
           }
 
           if (searchMode.value === 'dinner' && searchFilter.value.proposeSub) {
-            scored.forEach(mainDish => { mainDish.subDishes = findSubDishes(mainDish); });
+            finalScored.forEach(mainDish => { mainDish.subDishes = findSubDishes(mainDish); });
           }
 
-          searchResults.value = scored;
+          searchResults.value = finalScored;
 
           nextTick(() => {
             const el = document.getElementById('search-results-anchor');
