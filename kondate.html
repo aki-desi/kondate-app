@@ -3,19 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>こんだてナビ</title>
+  <title>ごはんナビ</title>
   <!-- Vue.js 3 CDN -->
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Google Fonts -->
   <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;500;700&display=swap" rel="stylesheet">
-  <meta charset="UTF-8">
-  <title>こんだてナビ</title>
-  <!-- iOS向けアイコン指定 -->
-  <link rel="apple-touch-icon" href="/kondate-app/apple-touch-icon.png?v=2">
-</head>
-
   
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -57,7 +51,7 @@
     <!-- ヘッダー -->
     <header class="flex justify-between items-center mb-6 pt-2">
       <h1 class="text-2xl font-bold text-primary flex items-center gap-2">
-        <span>🍳</span> こんだてナビ
+        <span>🍳</span> ごはんナビ
       </h1>
       <!-- 「つくるメモ」ボタン (ヘッダー右上) -->
       <button @click="showPinMemoModal = true" class="text-xs bg-white text-gray-800 font-bold px-3.5 py-1.5 rounded-full border border-gray-300 shadow-sm hover:bg-orange-50 transition flex items-center gap-1">
@@ -207,91 +201,101 @@
         </div>
       </section>
 
-      <!-- 検索実行ボタン（① 修正） -->
+      <!-- 検索実行ボタン -->
       <button @click="executeSearch(false)" class="w-full py-3.5 bg-primary text-white font-bold text-base rounded-2xl shadow-md hover:opacity-95 transition">
         ✨ おすすめ順に提案！
       </button>
 
       <!-- 検索結果エリア -->
-      <section id="search-results-anchor" v-if="displayedSearchResults.length > 0" class="space-y-4 pt-2">
-        <h3 class="font-bold text-sm text-gray-700 flex items-center justify-between">
-          <span>おすすめのメニュー ({{ displayedSearchResults.length }}件)</span>
-          <span v-if="isRelaxedSearch" class="text-xs text-primary font-normal">※条件をゆるめて表示中</span>
-        </h3>
+      <section id="search-results-anchor" v-if="hasSearched" class="space-y-4 pt-2">
+        
+        <!-- 検索結果が存在する場合の表示 -->
+        <template v-if="displayedSearchResults.length > 0">
+          <h3 class="font-bold text-sm text-gray-700 flex items-center justify-between">
+            <span>おすすめのメニュー ({{ displayedSearchResults.length }}件)</span>
+            <span v-if="isRelaxedSearch" class="text-xs text-primary font-normal">※条件をゆるめて表示中</span>
+          </h3>
 
-        <div v-for="item in displayedSearchResults" :key="item.id" @click="openDetailModal(item)" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative cursor-pointer hover:border-primary/50 transition">
-          
-          <!-- マッチ条件タグ（右上） -->
-          <div class="absolute top-3.5 right-3.5 flex flex-wrap gap-1 justify-end max-w-[180px]">
-            <span v-if="item.isIngDoubleCircle" class="bg-blue-100 text-blue-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-blue-200">
-              食材◎
-            </span>
-            <span v-else-if="item.isIngSingleCircle" class="bg-purple-100 text-purple-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-purple-200">
-              食材◯
-            </span>
-            <span v-if="item.isMoodMatched" class="bg-orange-100 text-orange-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-orange-200">
-              気分◎
-            </span>
-          </div>
-
-          <div class="flex gap-3">
-            <img v-if="item.image" :src="item.image" class="w-20 h-20 object-cover rounded-xl border border-gray-100">
-            <div v-else class="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-2xl">🍳</div>
+          <div v-for="item in displayedSearchResults" :key="item.id" @click="openDetailModal(item)" class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 relative cursor-pointer hover:border-primary/50 transition">
             
-            <div class="flex-1 pr-16">
-              <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-bold">{{ item.category }}</span>
-              <h4 class="font-bold text-base text-gray-800 mt-1">{{ item.name }}</h4>
-              <p class="text-xs text-gray-500 mt-0.5">{{ getDifficultyLabel(item.difficultyLevel || 2) }} | {{ item.genre }} | {{ item.volume || 'ふつう' }}</p>
-              <p class="text-xs text-gray-600 mt-1 line-clamp-1">材料: <span class="font-bold">{{ item.ingredients ? item.ingredients.join(', ') : '' }}</span></p>
+            <!-- マッチ条件タグ（右上） -->
+            <div class="absolute top-3.5 right-3.5 flex flex-wrap gap-1 justify-end max-w-[180px]">
+              <span v-if="item.isIngDoubleCircle" class="bg-blue-100 text-blue-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-blue-200">
+                食材◎
+              </span>
+              <span v-else-if="item.isIngSingleCircle" class="bg-purple-100 text-purple-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-purple-200">
+                食材◯
+              </span>
+              <span v-if="item.isMoodMatched" class="bg-orange-100 text-orange-800 font-bold text-[10px] px-2 py-0.5 rounded-full border border-orange-200">
+                気分◎
+              </span>
             </div>
-          </div>
 
-          <!-- サブおかず複数提案 -->
-          <div v-if="searchMode === 'dinner' && searchFilter.proposeSub && item.subDishes && item.subDishes.length > 0" @click.stop class="mt-3 p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 space-y-2">
-            <div class="flex justify-between items-center">
-              <p class="text-xs font-bold text-emerald-800">サブおかず提案 ({{ item.subDishes.length }}件)</p>
-              <button @click="rerollSubDishes(item)" class="text-[11px] bg-white text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200 shadow-sm hover:bg-emerald-50 shrink-0 font-bold">
-                シャッフル
-              </button>
+            <div class="flex gap-3">
+              <img v-if="item.image" :src="item.image" class="w-20 h-20 object-cover rounded-xl border border-gray-100">
+              <div v-else class="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-2xl">🍳</div>
+              
+              <div class="flex-1 pr-16">
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-bold">{{ item.category }}</span>
+                <h4 class="font-bold text-base text-gray-800 mt-1">{{ item.name }}</h4>
+                <p class="text-xs text-gray-500 mt-0.5">{{ getDifficultyLabel(item.difficultyLevel || 2) }} | {{ item.genre }} | {{ item.volume || 'ふつう' }}</p>
+                <p class="text-xs text-gray-600 mt-1 line-clamp-1">材料: <span class="font-bold">{{ item.ingredients ? item.ingredients.join(', ') : '' }}</span></p>
+              </div>
             </div>
-            <div class="space-y-1.5">
-              <div 
-                v-for="(sub, sIdx) in item.subDishes" 
-                :key="sub.id || sIdx" 
-                @click="openDetailModal(sub)"
-                class="p-2 bg-white rounded-lg border border-emerald-100 flex justify-between items-center cursor-pointer hover:border-emerald-300 transition"
-              >
-                <div>
-                  <p class="text-xs font-bold text-gray-800">{{ sub.name }}</p>
-                  <p class="text-[10px] text-gray-500">材料: {{ sub.ingredients ? sub.ingredients.join(', ') : '' }}</p>
+
+            <!-- サブおかず複数提案 -->
+            <div v-if="searchMode === 'dinner' && searchFilter.proposeSub && item.subDishes && item.subDishes.length > 0" @click.stop class="mt-3 p-3 bg-emerald-50/60 rounded-xl border border-emerald-100 space-y-2">
+              <div class="flex justify-between items-center">
+                <p class="text-xs font-bold text-emerald-800">サブおかず提案 ({{ item.subDishes.length }}件)</p>
+                <button @click="rerollSubDishes(item)" class="text-[11px] bg-white text-emerald-700 px-2.5 py-1 rounded-lg border border-emerald-200 shadow-sm hover:bg-emerald-50 shrink-0 font-bold">
+                  シャッフル
+                </button>
+              </div>
+              <div class="space-y-1.5">
+                <div 
+                  v-for="(sub, sIdx) in item.subDishes" 
+                  :key="sub.id || sIdx" 
+                  @click="openDetailModal(sub)"
+                  class="p-2 bg-white rounded-lg border border-emerald-100 flex justify-between items-center cursor-pointer hover:border-emerald-300 transition"
+                >
+                  <div>
+                    <p class="text-xs font-bold text-gray-800">{{ sub.name }}</p>
+                    <p class="text-[10px] text-gray-500">材料: {{ sub.ingredients ? sub.ingredients.join(', ') : '' }}</p>
+                  </div>
+                  <span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded">詳細 ></span>
                 </div>
-                <span class="text-[10px] text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded">詳細 ></span>
+              </div>
+            </div>
+
+            <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
+              <span class="text-gray-400">前回作成: {{ item.lastMadeDate || 'なし' }}</span>
+              <div class="flex gap-2">
+                <!-- メモボタン -->
+                <button @click.stop="togglePinMemo(item)" :class="['font-bold px-3 py-1.5 rounded-xl transition shadow-sm border', isPinned(item.id) ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">
+                  {{ isPinned(item.id) ? 'メモ済' : 'メモ🍚' }}
+                </button>
+                <!-- 作ったボタン -->
+                <button @click.stop="markAsMade(item)" class="bg-secondary text-white font-bold px-3 py-1.5 rounded-xl hover:opacity-90 transition shadow-sm">
+                  作った✨
+                </button>
               </div>
             </div>
           </div>
+        </template>
 
-          <div class="mt-3 pt-3 border-t border-gray-100 flex justify-between items-center text-xs">
-            <span class="text-gray-400">前回作成: {{ item.lastMadeDate || 'なし' }}</span>
-            <div class="flex gap-2">
-              <!-- メモ🥖 ボタン -->
-              <button @click.stop="togglePinMemo(item)" :class="['font-bold px-3 py-1.5 rounded-xl transition shadow-sm border', isPinned(item.id) ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">
-                {{ isPinned(item.id) ? 'メモ済' : 'メモ🍚' }}
-              </button>
-              <!-- 作った✨ ボタン -->
-              <button @click.stop="markAsMade(item)" class="bg-secondary text-white font-bold px-3 py-1.5 rounded-xl hover:opacity-90 transition shadow-sm">
-                作った✨
-              </button>
-            </div>
-          </div>
+        <!-- 0件の時のメッセージ（※5件未満時も下記ボタンが表示されます） -->
+        <div v-else class="bg-white p-6 rounded-2xl text-center space-y-2">
+          <p class="text-sm text-gray-600">ぴったりのレシピが見つかりませんでした。</p>
         </div>
-      </section>
 
-      <div v-else-if="hasSearched" class="bg-white p-6 rounded-2xl text-center space-y-3">
-        <p class="text-sm text-gray-600">ぴったりのレシピが見つかりませんでした。</p>
-        <button @click="executeSearch(true)" class="bg-accentYellow text-white font-bold text-xs px-4 py-2 rounded-xl">
-          条件を緩めて再検索
-        </button>
-      </div>
+        <!-- 5件未満（0件〜4件）かつ未だ条件緩和していない場合に最下部へ配置する「条件を緩めて再検索」ボタン -->
+        <div v-if="displayedSearchResults.length < 5 && !isRelaxedSearch" class="pt-2">
+          <button @click="executeSearch(true)" class="w-full py-3 bg-accentYellow text-white font-bold text-xs rounded-2xl shadow-sm hover:opacity-90 transition">
+            条件をゆるめて再検索 🔍
+          </button>
+        </div>
+
+      </section>
     </main>
 
     <!-- ================= ② 閲覧・一覧/編集 ================= -->
@@ -315,7 +319,7 @@
           <option value="ごはんもの">ごはんもの</option>
         </select>
 
-        <!-- メインおかず選択時: 肉類絞り込み（③ 修正） -->
+        <!-- メインおかず選択時: 肉類絞り込み -->
         <select v-if="listFilterCategory === 'メインおかず'" v-model="listFilterMeat" class="p-2 border border-gray-200 rounded-xl flex-1 bg-orange-50/50 border-orange-200 font-bold text-primary">
           <option value="">すべての肉類・メイン食材</option>
           <option value="豚肉">豚肉</option>
@@ -969,7 +973,7 @@
           showPinMemoModal.value = false;
         };
 
-        // ② 検索処理の調整（ある・使いたい食材のみで作れるレシピに絞り込み、緩め時スコアリング）
+        // 検索処理
         const executeSearch = (relaxed = false) => {
           hasSearched.value = true;
           isRelaxedSearch.value = relaxed;
@@ -1003,7 +1007,6 @@
                 }
               }
 
-              // 夕飯・簡単モード（およびサブ含む全モード）で「ある食材」「使いたい食材」のみを材料に含むメニューだけを抽出
               const ingredientsList = r.ingredients || [];
               if (ingredientsList.length > 0) {
                 const canMake = ingredientsList.every(i => haveList.includes(i));
@@ -1054,7 +1057,6 @@
             };
           });
 
-          // 再検索（緩め条件）時は足りない材料の少なさを第一優先にしつつ使いたい食材の一致（スコア）で並び替え
           if (relaxed) {
             scored.sort((a, b) => a.missingCount - b.missingCount || b.matchScore - a.matchScore);
           } else {
@@ -1388,7 +1390,7 @@ JSON構造:
           }
         };
 
-        // ③ 一覧のメインおかず肉類絞り込みロジック修正
+        // 一覧のメインおかず肉類絞り込みロジック
         const filteredList = computed(() => {
           let list = recipes.value;
           
@@ -1436,4 +1438,3 @@ JSON構造:
   </script>
 </body>
 </html>
-
