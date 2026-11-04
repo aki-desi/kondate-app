@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -29,7 +30,7 @@
             textMain: '#3D405B',
             tagMeat: '#D9534F',
             tagVeg: '#2E7D32',
-            tagOther: '#8E24AA'
+            tagOther: '#F4A261'
           },
           fontFamily: {
             sans: ['"Zen Maru Gothic"', 'sans-serif'],
@@ -342,8 +343,8 @@
         </select>
 
         <!-- その他選択時: 小カテゴリ絞り込み -->
-        <select v-if="listFilterCategory === 'その他'" v-model="listFilterOtherSubCategory" class="p-2 border border-purple-200 rounded-xl flex-1 bg-purple-50/50 font-bold text-purple-800">
-          <option value="">すべての小カテゴリ</option>
+        <select v-if="listFilterCategory === 'その他'" v-model="listFilterOtherSubCategory" class="p-2 border border-accentYellow rounded-xl flex-1 bg-amber-50/60 font-bold text-amber-800">
+          <option value="">すべて</option>
           <option value="ごはん">ごはん</option>
           <option value="麺">麺</option>
           <option value="パン">パン</option>
@@ -414,7 +415,7 @@
         <div v-if="newRecipe.category === 'その他'">
           <label class="block font-bold text-gray-600 mb-1">その他カテゴリの種類 *</label>
           <div class="grid grid-cols-4 gap-2">
-            <button v-for="sub in ['ごはん', '麺', 'パン', 'お菓子']" :key="sub" type="button" @click="newRecipe.subCategory = sub" :class="['py-1.5 rounded-xl border font-bold text-xs transition', newRecipe.subCategory === sub ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-50/40 text-purple-800 border-purple-200 hover:bg-purple-100/50']">
+            <button v-for="sub in ['ごはん', '麺', 'パン', 'お菓子']" :key="sub" type="button" @click="newRecipe.subCategory = sub" :class="['py-1.5 rounded-xl border font-bold text-xs transition shadow-sm', newRecipe.subCategory === sub ? 'bg-accentYellow text-white border-accentYellow' : 'bg-amber-50/50 text-amber-800 border-amber-200 hover:bg-amber-100/60']">
               {{ sub }}
             </button>
           </div>
@@ -675,9 +676,9 @@
 
         <!-- その他選択時: 小カテゴリ選択 -->
         <div v-if="editingRecipe.category === 'その他'">
-          <label class="block font-bold text-gray-600 mb-1">その他カテゴリの種類 *</label>
+          <label class="block font-bold text-gray-600 mb-1">カテゴリ *</label>
           <div class="grid grid-cols-4 gap-2">
-            <button v-for="sub in ['ごはん', '麺', 'パン', 'お菓子']" :key="sub" type="button" @click="editingRecipe.subCategory = sub" :class="['py-1.5 rounded-xl border font-bold text-xs transition', editingRecipe.subCategory === sub ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-50/40 text-purple-800 border-purple-200 hover:bg-purple-100/50']">
+            <button v-for="sub in ['ごはん', '麺', 'パン', 'お菓子']" :key="sub" type="button" @click="editingRecipe.subCategory = sub" :class="['py-1.5 rounded-xl border font-bold text-xs transition shadow-sm', editingRecipe.subCategory === sub ? 'bg-accentYellow text-white border-accentYellow' : 'bg-amber-50/50 text-amber-800 border-amber-200 hover:bg-amber-100/60']">
               {{ sub }}
             </button>
           </div>
