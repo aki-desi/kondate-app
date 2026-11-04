@@ -237,7 +237,9 @@
               <div v-else class="w-20 h-20 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-2xl">🍳</div>
               
               <div class="flex-1 pr-16">
-                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-bold">{{ item.category }}</span>
+                <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-md font-bold">
+                  {{ item.category }}<span v-if="item.category === 'その他' && item.subCategory"> / {{ item.subCategory }}</span>
+                </span>
                 <h4 class="font-bold text-base text-gray-800 mt-1">{{ item.name }}</h4>
                 <p class="text-xs text-gray-500 mt-0.5">{{ getDifficultyLabel(item.difficultyLevel || 2) }} | {{ item.genre }} | {{ item.volume || 'ふつう' }}</p>
                 <p class="text-xs text-gray-600 mt-1 line-clamp-1">材料: <span class="font-bold">{{ item.ingredients ? item.ingredients.join(', ') : '' }}</span></p>
@@ -317,7 +319,7 @@
           <option value="">すべてのカテゴリ</option>
           <option value="メインおかず">メインおかず</option>
           <option value="サブおかず">サブおかず</option>
-          <option value="ごはんもの">ごはんもの</option>
+          <option value="その他">その他</option>
         </select>
 
         <!-- メインおかず選択時: 肉類絞り込み -->
@@ -338,6 +340,15 @@
           <option value="中華">中華</option>
           <option value="その他">その他</option>
         </select>
+
+        <!-- その他選択時: 小カテゴリ絞り込み -->
+        <select v-if="listFilterCategory === 'その他'" v-model="listFilterOtherSubCategory" class="p-2 border border-purple-200 rounded-xl flex-1 bg-purple-50/50 font-bold text-purple-800">
+          <option value="">すべての小カテゴリ</option>
+          <option value="ごはん">ごはん</option>
+          <option value="麺">麺</option>
+          <option value="パン">パン</option>
+          <option value="お菓子">お菓子</option>
+        </select>
       </div>
 
       <!-- レシピ一覧表示 -->
@@ -350,7 +361,9 @@
             <div v-else class="w-16 h-16 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-xl">🍳</div>
 
             <div class="flex-1 pr-6">
-              <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-bold">{{ recipe.category }}</span>
+              <span class="bg-gray-100 text-gray-600 px-2 py-0.5 rounded font-bold">
+                {{ recipe.category }}<span v-if="recipe.category === 'その他' && recipe.subCategory"> / {{ recipe.subCategory }}</span>
+              </span>
               <h4 class="font-bold text-sm text-gray-800 mt-1">{{ recipe.name }}</h4>
               <p class="text-gray-500 mt-0.5 line-clamp-1">材料: {{ recipe.ingredients ? recipe.ingredients.join(', ') : '' }}</p>
               <p class="text-gray-400 mt-1">最終作成: {{ recipe.lastMadeDate || '記録なし' }} (作成数: {{ recipe.makeCount || 0 }}回)</p>
@@ -391,8 +404,18 @@
         <div>
           <label class="block font-bold text-gray-600 mb-1">カテゴリ *</label>
           <div class="flex gap-2">
-            <button v-for="cat in ['メインおかず', 'サブおかず', 'ごはんもの']" :key="cat" @click="newRecipe.category = cat" :class="['flex-1 py-1.5 rounded-xl border font-bold', newRecipe.category === cat ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200']">
+            <button v-for="cat in ['メインおかず', 'サブおかず', 'その他']" :key="cat" @click="newRecipe.category = cat" :class="['flex-1 py-1.5 rounded-xl border font-bold', newRecipe.category === cat ? 'bg-primary text-white border-primary' : 'bg-white text-gray-600 border-gray-200']">
               {{ cat }}
+            </button>
+          </div>
+        </div>
+
+        <!-- その他選択時: 小カテゴリ選択 -->
+        <div v-if="newRecipe.category === 'その他'">
+          <label class="block font-bold text-gray-600 mb-1">その他カテゴリの種類 *</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button v-for="sub in ['ごはん', '麺', 'パン', 'お菓子']" :key="sub" type="button" @click="newRecipe.subCategory = sub" :class="['py-1.5 rounded-xl border font-bold text-xs transition', newRecipe.subCategory === sub ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-50/40 text-purple-800 border-purple-200 hover:bg-purple-100/50']">
+              {{ sub }}
             </button>
           </div>
         </div>
@@ -494,7 +517,9 @@
       <div class="bg-white rounded-3xl max-w-lg w-full max-h-[88dvh] min-h-[72dvh] flex flex-col overflow-hidden shadow-xl my-auto">
         <!-- モーダルヘッダー -->
         <div class="p-3.5 border-b border-gray-100 flex justify-between items-center bg-gray-50/50 shrink-0">
-          <span class="bg-primary/10 text-primary font-bold text-xs px-3 py-1 rounded-full">{{ activeDetailModal.category }}</span>
+          <span class="bg-primary/10 text-primary font-bold text-xs px-3 py-1 rounded-full">
+            {{ activeDetailModal.category }}<span v-if="activeDetailModal.category === 'その他' && activeDetailModal.subCategory"> / {{ activeDetailModal.subCategory }}</span>
+          </span>
           <div class="flex gap-2">
             <button @click="startEditingActiveModal" class="text-xs bg-white border border-gray-300 font-bold px-3 py-1 rounded-xl hover:bg-gray-50">編集</button>
             <button @click="activeDetailModal = null" class="text-gray-400 hover:text-gray-600 text-xl font-bold px-2">✕</button>
@@ -581,7 +606,7 @@
         <div class="p-3.5 border-t border-gray-100 bg-gray-50/50 flex justify-between items-center text-xs shrink-0">
           <span class="text-gray-400">作成: {{ activeDetailModal.makeCount || 0 }}回</span>
           <div class="flex gap-2">
-            <!-- メモ🥖 ボタン -->
+            <!-- メモ🍚 ボタン -->
             <button @click="togglePinMemo(activeDetailModal)" :class="['font-bold px-3 py-1.5 rounded-xl transition shadow-sm border', isPinned(activeDetailModal.id) ? 'bg-amber-100 text-amber-800 border-amber-300' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50']">
               {{ isPinned(activeDetailModal.id) ? 'メモ済🍚' : 'メモ🍚' }}
             </button>
@@ -612,7 +637,9 @@
                 <img v-if="memo.image" :src="memo.image" class="w-12 h-12 object-cover rounded-xl border border-gray-100 shrink-0">
                 <div v-else class="w-12 h-12 bg-gray-100 rounded-xl flex items-center justify-center text-gray-400 text-lg shrink-0">🍳</div>
                 <div>
-                  <span class="bg-gray-100 text-gray-600 text-[10px] px-1.5 py-0.5 rounded font-bold">{{ memo.category }}</span>
+                  <span class="bg-gray-100 text-gray-600 text-[10px] px-1.5 py-0.5 rounded font-bold">
+                    {{ memo.category }}<span v-if="memo.category === 'その他' && memo.subCategory"> / {{ memo.subCategory }}</span>
+                  </span>
                   <h4 class="font-bold text-sm text-gray-800 mt-0.5">{{ memo.name }}</h4>
                   <p class="text-[11px] text-gray-500 line-clamp-1">材料: {{ memo.ingredients ? memo.ingredients.join(', ') : '' }}</p>
                 </div>
@@ -625,7 +652,7 @@
           <div v-else class="text-center py-12 text-gray-400 space-y-2">
             <p class="text-2xl">🍚</p>
             <p class="text-xs">つくるメモに保存されたレシピはありません。</p>
-            <p class="text-[11px] text-gray-400">レシピカードのなめらかな「メモ🍚」ボタンを押すとここに登録されます。</p>
+            <p class="text-[11px] text-gray-400">レシピカードの「メモ🍚」ボタンを押すとここに登録されます。</p>
           </div>
         </div>
       </div>
@@ -636,11 +663,23 @@
       <div class="bg-white rounded-3xl max-w-lg w-full max-h-[88dvh] min-h-[72dvh] flex flex-col overflow-hidden p-4 sm:p-5 space-y-3 text-xs overflow-y-auto my-auto">
         <h3 class="font-bold text-sm text-gray-800">レシピ情報の編集</h3>
 
-        <!-- カテゴリ（固定） -->
+        <!-- カテゴリ切り替え -->
         <div>
           <label class="block font-bold text-gray-600 mb-1">カテゴリ</label>
-          <div class="p-2 bg-gray-100 rounded-xl font-bold text-gray-600">
-            {{ editingRecipe.category }}
+          <div class="flex gap-2">
+            <button v-for="cat in ['メインおかず', 'サブおかず', 'その他']" :key="cat" type="button" @click="editingRecipe.category = cat" :class="['flex-1 py-1.5 rounded-xl border font-bold', editingRecipe.category === cat ? 'bg-primary text-white border-primary' : 'bg-gray-50 text-gray-600 border-gray-200']">
+              {{ cat }}
+            </button>
+          </div>
+        </div>
+
+        <!-- その他選択時: 小カテゴリ選択 -->
+        <div v-if="editingRecipe.category === 'その他'">
+          <label class="block font-bold text-gray-600 mb-1">その他カテゴリの種類 *</label>
+          <div class="grid grid-cols-4 gap-2">
+            <button v-for="sub in ['ごはん', '麺', 'パン', 'お菓子']" :key="sub" type="button" @click="editingRecipe.subCategory = sub" :class="['py-1.5 rounded-xl border font-bold text-xs transition', editingRecipe.subCategory === sub ? 'bg-purple-600 text-white border-purple-600' : 'bg-purple-50/40 text-purple-800 border-purple-200 hover:bg-purple-100/50']">
+              {{ sub }}
+            </button>
           </div>
         </div>
 
@@ -801,6 +840,7 @@
 
         const newRecipe = ref({
           category: 'メインおかず',
+          subCategory: 'ごはん',
           name: '',
           image: '',
           url: '',
@@ -823,6 +863,7 @@
         const listFilterCategory = ref('');
         const listFilterMeat = ref('');
         const listFilterSubGenre = ref('');
+        const listFilterOtherSubCategory = ref('');
 
         const initFirebase = (configObj) => {
           try {
@@ -831,10 +872,17 @@
             db = firebase.firestore();
             isFirebaseConnected.value = true;
 
-            // レシピ同期
+            // レシピ同期 (過去の「ごはんもの」データは自動で「その他 / ごはん」として扱う)
             db.collection('recipes').onSnapshot((snapshot) => {
               const items = [];
-              snapshot.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
+              snapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.category === 'ごはんもの') {
+                  data.category = 'その他';
+                  if (!data.subCategory) data.subCategory = 'ごはん';
+                }
+                items.push({ id: doc.id, ...data });
+              });
               recipes.value = items;
             });
 
@@ -848,7 +896,14 @@
             // つくるメモ（ピン留め）同期
             db.collection('pinMemos').onSnapshot((snapshot) => {
               const items = [];
-              snapshot.forEach((doc) => items.push({ id: doc.id, ...doc.data() }));
+              snapshot.forEach((doc) => {
+                const data = doc.data();
+                if (data.category === 'ごはんもの') {
+                  data.category = 'その他';
+                  if (!data.subCategory) data.subCategory = 'ごはん';
+                }
+                items.push({ id: doc.id, ...data });
+              });
               pinMemos.value = items;
             });
           } catch (e) {
@@ -930,7 +985,7 @@
           return map[lvl] || 'ふつう';
         };
 
-        // ピン留め（つくるメモ🥖）判定＆トグル保存
+        // ピン留め判定＆トグル保存
         const isPinned = (recipeId) => {
           return pinMemos.value.some(m => String(m.id) === String(recipeId));
         };
@@ -951,6 +1006,7 @@
               id: targetId,
               name: recipe.name,
               category: recipe.category,
+              subCategory: recipe.subCategory || '',
               image: recipe.image || '',
               ingredients: recipe.ingredients || [],
               pinnedAt: new Date().toISOString()
@@ -985,7 +1041,8 @@
           let candidates = recipes.value.filter(r => {
             if (searchMode.value === 'sub') return r.category === 'サブおかず';
             if (searchMode.value === 'lunch') {
-              return r.category === 'ごはんもの' || (r.category === 'メインおかず' && (r.difficultyLevel || 2) <= 1);
+              // 簡単モード: その他カテゴリ、または「メインおかず」で難易度かんたんのもの
+              return r.category === 'その他' || (r.category === 'メインおかず' && (r.difficultyLevel || 2) <= 1);
             }
             return r.category === 'メインおかず';
           });
@@ -1017,7 +1074,6 @@
               return true;
             });
           } else {
-            // 💡 条件を緩めて再検索時：むずかしさの条件のみ維持する
             candidates = candidates.filter(r => {
               if (r.difficultyLevel && r.difficultyLevel > searchFilter.value.maxDifficultyLevel) return false;
               return true;
@@ -1066,7 +1122,6 @@
 
           let finalScored = scored;
           if (relaxed) {
-            // 💡 緩和検索時は不足材料が2個までのものに限定し、不足数が少ない順 → スコア順に並び替え
             finalScored = scored.filter(r => r.missingCount <= 2);
             finalScored.sort((a, b) => a.missingCount - b.missingCount || b.matchScore - a.matchScore);
           } else {
@@ -1121,6 +1176,8 @@
           const r = activeDetailModal.value;
           editingRecipe.value = {
             ...r,
+            category: r.category || 'メインおかず',
+            subCategory: r.subCategory || 'ごはん',
             ingredientsStr: r.ingredients ? r.ingredients.join(', ') : '',
             genre: r.genre || '和風',
             difficultyLevel: r.difficultyLevel || 2,
@@ -1191,7 +1248,8 @@
 JSON構造:
 {
   "name": "料理名",
-  "category": "メインおかず" | "サブおかず" | "ごはんもの",
+  "category": "メインおかず" | "サブおかず" | "その他",
+  "subCategory": "ごはん" | "麺" | "パン" | "お菓子" (※categoryが"その他"の場合のみ設定、それ以外は空文字),
   "ingredientsStr": "メイン材料のカンマ区切り (例: 豚肉, 玉ねぎ)",
   "ingredientsDetail": "材料と分量のテキスト",
   "instructions": "作り方手順",
@@ -1212,6 +1270,10 @@ JSON構造:
             const data = await response.json();
             const jsonText = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
             const parsed = JSON.parse(jsonText);
+
+            if (parsed.category === 'その他' && !parsed.subCategory) {
+              parsed.subCategory = 'ごはん';
+            }
 
             Object.assign(newRecipe.value, parsed);
             alert('AI解析が完了し、フォームに入力されました！');
@@ -1236,7 +1298,8 @@ JSON構造:
 JSON構造:
 {
   "name": "料理名",
-  "category": "メインおかず" | "サブおかず" | "ごはんもの",
+  "category": "メインおかず" | "サブおかず" | "その他",
+  "subCategory": "ごはん" | "麺" | "パン" | "お菓子" (※categoryが"その他"の場合のみ設定、それ以外は空文字),
   "ingredientsStr": "メイン材料のカンマ区切り",
   "ingredientsDetail": "材料と分量",
   "instructions": "手順",
@@ -1264,6 +1327,10 @@ JSON構造:
               const jsonText = data.candidates[0].content.parts[0].text.replace(/```json/g, '').replace(/```/g, '').trim();
               const parsed = JSON.parse(jsonText);
 
+              if (parsed.category === 'その他' && !parsed.subCategory) {
+                parsed.subCategory = 'ごはん';
+              }
+
               Object.assign(newRecipe.value, parsed);
               newRecipe.value.image = base64Img;
               alert('画像からのAI解析が完了しました！');
@@ -1282,6 +1349,7 @@ JSON構造:
           
           const recipeData = {
             ...newRecipe.value,
+            subCategory: newRecipe.value.category === 'その他' ? (newRecipe.value.subCategory || 'ごはん') : '',
             ingredients,
             makeCount: 0,
             lastMadeDate: '',
@@ -1296,7 +1364,7 @@ JSON構造:
           }
 
           alert('レシピを保存しました');
-          newRecipe.value = { category: 'メインおかず', name: '', image: '', url: '', ingredientsStr: '', ingredientsDetail: '', difficultyLevel: 2, genre: '和風', volume: 'ふつう', temp: '指定なし', feature1: '別々OK', instructions: '' };
+          newRecipe.value = { category: 'メインおかず', subCategory: 'ごはん', name: '', image: '', url: '', ingredientsStr: '', ingredientsDetail: '', difficultyLevel: 2, genre: '和風', volume: 'ふつう', temp: '指定なし', feature1: '別々OK', instructions: '' };
           aiTextRaw.value = '';
           currentTab.value = 'list';
         };
@@ -1304,7 +1372,11 @@ JSON構造:
         const saveEditedRecipe = async () => {
           const r = editingRecipe.value;
           const ingredients = r.ingredientsStr ? r.ingredientsStr.split(/[,、]/).map(s => s.trim()).filter(Boolean) : [];
-          const updated = { ...r, ingredients };
+          const updated = { 
+            ...r, 
+            subCategory: r.category === 'その他' ? (r.subCategory || 'ごはん') : '',
+            ingredients 
+          };
 
           if (isFirebaseConnected.value && db) {
             await db.collection('recipes').doc(String(r.id)).update(updated);
@@ -1400,7 +1472,7 @@ JSON構造:
           }
         };
 
-        // 一覧のメインおかず肉類絞り込みロジック
+        // 一覧の絞り込みロジック
         const filteredList = computed(() => {
           let list = recipes.value;
           
@@ -1430,6 +1502,10 @@ JSON構造:
             list = list.filter(r => (r.genre || '和風') === listFilterSubGenre.value);
           }
 
+          if (listFilterCategory.value === 'その他' && listFilterOtherSubCategory.value) {
+            list = list.filter(r => (r.subCategory || 'ごはん') === listFilterOtherSubCategory.value);
+          }
+
           return list;
         });
 
@@ -1437,7 +1513,7 @@ JSON構造:
           currentTab, searchMode, keywordQuery, showPinMemoModal, apiKey, firebaseConfigInput, isFirebaseConnected,
           defaultIngredients, ingredientStates, isEditingIngredients, searchFilter, searchResults, displayedSearchResults, hasSearched,
           isRelaxedSearch, newRecipe, activeDetailModal, modalTab, editingRecipe, aiTextRaw, isAnalyzing,
-          listFilterCategory, listFilterMeat, listFilterSubGenre, filteredList, pinMemos,
+          listFilterCategory, listFilterMeat, listFilterSubGenre, listFilterOtherSubCategory, filteredList, pinMemos,
           moveIngredient, cycleIngredientState, getIngredientClass, promptAddIngredient, removeIngredient,
           getDifficultyLabel, executeSearch, rerollSubDishes, openDetailModal, startEditingActiveModal,
           handleRecipeImageUpload, handleEditRecipeImageUpload, extractByText, extractByImage, saveRecipe, saveEditedRecipe, markAsMade, deleteRecipe,
