@@ -309,7 +309,7 @@
       <section class="bg-white p-4 rounded-2xl shadow-sm border border-gray-100 space-y-2">
         <h2 class="font-bold text-xs text-gray-700">🔍 料理名からさがす</h2>
         <div class="relative">
-          <input v-model="keywordQuery" placeholder="料理名を入力... (例: ハンバーグ、生姜焼き)" class="w-full p-2.5 pr-10 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-primary">
+          <input v-model="keywordQuery" placeholder="料理名を入力" class="w-full p-2.5 pr-10 border border-gray-200 rounded-xl text-xs focus:outline-none focus:border-primary">
           <span v-if="keywordQuery" @click="keywordQuery = ''" class="absolute right-3 top-2 text-gray-400 hover:text-gray-600 font-bold cursor-pointer text-sm">✕</span>
         </div>
       </section>
@@ -652,8 +652,8 @@
           </div>
           <div v-else class="text-center py-12 text-gray-400 space-y-2">
             <p class="text-2xl">🍚</p>
-            <p class="text-xs">つくるメモに保存されたレシピはありません。</p>
-            <p class="text-[11px] text-gray-400">レシピカードの「メモ🍚」ボタンを押すとここに登録されます。</p>
+            <p class="text-xs">保存されたレシピはありません。</p>
+            <p class="text-[11px] text-gray-400">「メモ🍚」ボタンを押して登録</p>
           </div>
         </div>
       </div>
